@@ -1,0 +1,19 @@
+{
+  "scripts": {
+    "build-all": "node ./scripts/build.js",
+    "deploy:clob": "CONTRACT_NAME=clob node ./scripts/deploy.js",
+    "deploy:amm": "CONTRACT_NAME=amm node ./scripts/deploy.js",
+    "fmt": "prettier --write ."
+  },
+  "gitHooks": {
+    "pre-commit": "prettier --write . && git add -A"
+  },
+  "devDependencies": {
+    "arweave": "^1.10.13",
+    "esbuild": "^0.11.12",
+    "prettier": "^2.2.1",
+    "smartweave": "^0.4.29",
+    "typescript": "^4.2.4",
+    "yorkie": "^2.0.0"
+  }
+}
