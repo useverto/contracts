@@ -2,6 +2,7 @@ import { StateInterface, ActionInterface } from "./faces";
 import { Halt } from "./modules/halt";
 import { AddPair } from "./modules/addPair";
 import { CreateOrder } from "./modules/createOrder";
+import { CancelOrder } from "./modules/cancelOrder";
 
 export async function handle(state: StateInterface, action: ActionInterface) {
   switch (action.input.function) {
@@ -15,7 +16,7 @@ export async function handle(state: StateInterface, action: ActionInterface) {
 
     case "cancelOrder":
       ContractAssert(!state.halted, "The contract is currently halted");
-      return { state: Mint(state, action) };
+      return { state: CancelOrder(state, action) };
 
     case "halt":
       return { state: Halt(state, action) };

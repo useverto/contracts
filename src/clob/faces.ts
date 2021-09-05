@@ -11,6 +11,8 @@ export interface StateInterface {
           creator: string;
           token: string;
           price: number;
+          quantity: number;
+          originalQuantity: number; // The original amount of tokens ordered
         }?
       ];
     }
