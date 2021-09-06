@@ -1,4 +1,4 @@
-import { ActionInterface, StateInterface, StateInterface } from "../faces";
+import { ActionInterface, StateInterface } from "../faces";
 
 export const TogglePairGatekeeper = (
   state: StateInterface,

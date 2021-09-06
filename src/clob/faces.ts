@@ -3,6 +3,7 @@ export interface StateInterface {
   halted: boolean;
   protocolFeePercent: number; // Percent of orders going to protocol
   pairGatekeeper: boolean; // Disable access to "addPair" to addresses without a Verto ID
+  communityContract: string; // ID of the Verto community contract
   pairs: [
     {
       pair: [string, string];
@@ -37,6 +38,11 @@ export interface CancelOrderInterface {
 
 export interface HaltInterface {
   function: "halt";
+}
+
+export interface SetCommunityContractInterface {
+  function: "setCommunityContract";
+  id: string;
 }
 
 export interface InvokeInterface {

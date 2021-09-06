@@ -8,6 +8,8 @@ export const AddPair = async (
   const input: AddPairInterface = action.input;
 
   const pairs = state.pairs;
+  const communityContract = state.communityContract;
+  const gatekeeperActive = state.pairGatekeeper;
   const newPair = input.pair;
 
   // Test that pairs are valid contract strings
@@ -15,6 +17,15 @@ export const AddPair = async (
     /[a-z0-9_-]{43}/i.test(newPair[0]) && /[a-z0-9_-]{43}/i.test(newPair[1]),
     "One of two supplied pairs is invalid"
   );
+
+  // If the gatekeeper is active, check if the caller has a Verto ID
+  if (gatekeeperActive) {
+    // Read the community contract's state
+    // If this fails, make sure to check if the community contract ID is valid
+    const communityState = await SmartWeave.contracts.readContractState(communityContract);
+
+    ContractAssert(!!communityState.people.find((person) => person.addresses.includes(caller)), "No Verto ID linked to this address");
+  }
 
   // Test that pair is a valid contract
   for (const id of newPair) {

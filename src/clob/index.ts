@@ -6,6 +6,7 @@ import { CancelOrder } from "./modules/cancelOrder";
 import { ReadOutbox } from "./modules/readOutbox";
 import { Invoke } from "./modules/invoke";
 import { TogglePairGatekeeper } from "./modules/togglePairGatekeeper";
+import { SetCommunityContract } from "./modules/setCommunityContract";
 
 export async function handle(state: StateInterface, action: ActionInterface) {
   ContractAssert(
@@ -31,6 +32,9 @@ export async function handle(state: StateInterface, action: ActionInterface) {
 
     case "togglePairGatekeeper":
       return { state: TogglePairGatekeeper(state, action) };
+
+    case "setCommunityContract":
+      return { state: SetCommunityContract(state, action) };
 
     case "halt":
       return { state: Halt(state, action) };
