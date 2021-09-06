@@ -22,9 +22,16 @@ export const AddPair = async (
   if (gatekeeperActive) {
     // Read the community contract's state
     // If this fails, make sure to check if the community contract ID is valid
-    const communityState = await SmartWeave.contracts.readContractState(communityContract);
+    const communityState = await SmartWeave.contracts.readContractState(
+      communityContract
+    );
 
-    ContractAssert(!!communityState.people.find((person) => person.addresses.includes(caller)), "No Verto ID linked to this address");
+    ContractAssert(
+      !!communityState.people.find((person) =>
+        person.addresses.includes(caller)
+      ),
+      "No Verto ID linked to this address"
+    );
   }
 
   // Test that pair is a valid contract
@@ -67,5 +74,6 @@ export const AddPair = async (
     pair: newPair,
     orders: [],
   });
+
   return state;
 };

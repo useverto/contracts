@@ -19,7 +19,7 @@ export async function handle(state: StateInterface, action: ActionInterface) {
       return { state: await AddPair(state, action) };
 
     case "createOrder":
-      return { result: await CreateOrder(state, action) };
+      return { state: await CreateOrder(state, action) };
 
     case "cancelOrder":
       return { state: await CancelOrder(state, action) };
@@ -34,7 +34,7 @@ export async function handle(state: StateInterface, action: ActionInterface) {
       return { state: TogglePairGatekeeper(state, action) };
 
     case "setCommunityContract":
-      return { state: SetCommunityContract(state, action) };
+      return { state: SetCommunityContract(state, action) };
 
     case "halt":
       return { state: Halt(state, action) };

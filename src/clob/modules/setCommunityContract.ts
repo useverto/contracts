@@ -1,5 +1,9 @@
-import { ActionInterface, SetCommunityContractInterface, StateInterface } from "../faces";
-import { isAddress } from "../utils"
+import {
+  ActionInterface,
+  SetCommunityContractInterface,
+  StateInterface,
+} from "../faces";
+import { isAddress } from "../utils";
 
 export const SetCommunityContract = (
   state: StateInterface,
