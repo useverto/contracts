@@ -2,26 +2,15 @@ export interface StateInterface {
   emergencyHaltWallet: string; // Wallet address to be used to halt contract in the event of an emergency
   halted: boolean;
   protocolFeePercent: number; // Percent of orders going to protocol
+  pairGatekeeper: boolean; // Disable access to "addPair" to addresses without a Verto ID
   pairs: [
     {
       pair: [string, string];
-      orders: [
-        {
-          transaction: string;
-          creator: string;
-          token: string;
-          price: number;
-          quantity: number;
-          originalQuantity: number; // The original amount of tokens ordered
-        }?
-      ];
+      orders: OrderInterface[];
     }
   ];
   invocations: string[];
-  foreignCalls: {
-    contract: string;
-    input: object;
-  }[];
+  foreignCalls: ForeignCallInterface[];
 }
 
 export interface ActionInterface {
@@ -59,4 +48,21 @@ export interface InvokeInterface {
 export interface ReadOutboxInterface {
   function: "readOutbox";
   contract: string;
+  id: string;
+}
+
+// Other interfaces
+
+export interface OrderInterface {
+  transaction: string;
+  creator: string;
+  token: string;
+  price: number;
+  quantity: number;
+  originalQuantity: number; // The original amount of tokens ordered
+}
+
+export interface ForeignCallInterface {
+  contract: string;
+  input: object;
 }

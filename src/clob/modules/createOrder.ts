@@ -2,13 +2,15 @@ import {
   ActionInterface,
   StateInterface,
   CreateOrderInterface,
+  OrderInterface,
+  ForeignCallInterface,
 } from "../faces";
 import { ensureValidTransfer, isAddress } from "../utils";
 
 export const CreateOrder = async (
   state: StateInterface,
   action: ActionInterface
-) => {
+): Promise<StateInterface> => {
   const caller = action.caller;
   const input: CreateOrderInterface = action.input;
 
@@ -69,24 +71,30 @@ export const CreateOrder = async (
   // Test tokenTx for valid contract interaction
   await ensureValidTransfer(contractID, tokenTx);
 
+  // Sort orderbook based on prices
   let sortedOrderbook = state.pairs[pairIndex].orders.sort((a, b) =>
     a.price > b.price ? 1 : -1
   );
 
-  // Check for limit order or market order
-  if (price) {
-    // Check supplied price
-    ContractAssert(typeof price === "number", "Invalid price: not a number");
+  JSON.parse(contractInput);
 
-    // Limit order
-  } else {
-    // Market order
+  // Invoke the recursive matching function
+  const { orderbook, foreignCalls } = matchOrder(
+    contractID,
+    contractInput.qty,
+    caller,
+    SmartWeave.transaction.id,
+    sortedOrderbook,
+    price
+  );
+
+  // Update orderbook accordingly
+  state.pairs[pairIndex].orders = orderbook;
+
+  // Update foreignCalls accordingly for tokens to be sent
+  for (let i = 0; i < foreignCalls.length; i++) {
+    state.foreignCalls.push(foreignCalls[i]);
   }
-
-  state.pairs.push({
-    pair: usedPair,
-    orders: [],
-  });
 
   return state;
 };
@@ -95,25 +103,17 @@ function matchOrder(
   inputToken: string, // Token of the new order
   inputQuantity: number,
   inputCreator: string,
-  inputTransaction,
-  orderbook: [
-    {
-      transaction: string;
-      creator: string;
-      token: string; // Opposite token of the new order
-      price: number;
-      quantity: number;
-      originalQuantity: number;
-    }?
-  ],
+  inputTransaction: string,
+  orderbook: OrderInterface[],
   inputPrice?: number,
-  foreignCalls?: [object]
+  foreignCalls?: ForeignCallInterface[]
 ) {
   if (inputPrice) {
     // Limit order
-    // Compare quantity with first order in book
-    // Subtract order amount
-    // Add to outbox to transfer tokens
+    ContractAssert(
+      typeof inputPrice === "number",
+      "Invalid price: not a number"
+    );
     const fillAmount = inputQuantity * inputPrice;
     for (let i = 0; i < orderbook.length; i++) {
       if (inputPrice === orderbook[i].price) {
@@ -184,27 +184,84 @@ function matchOrder(
               input: {
                 function: "transfer",
                 target: orderbook[i].creator,
-                qty: 0,
+                qty: inputQuantity - orderbook[i].quantity * inputPrice,
               },
             },
             // Send new order creator tokens from existing order
-            {}
+            {
+              contract: orderbook[i].token,
+              input: {
+                function: "transfer",
+                target: inputCreator,
+                qty: orderbook[i].quantity,
+              },
+            }
           );
+
           // Remove existing order & subtract input order amount from existing
-          orderbook.splice(i, 1);
           orderbook.push({
             transaction: inputTransaction,
             creator: inputCreator,
             token: inputToken,
             price: inputPrice,
-            quantity: inputQuantity - 0,
+            quantity: inputQuantity - orderbook[i].quantity * inputPrice, // Input price in units of inputToken/existingToken
             originalQuantity: inputQuantity,
           });
+          orderbook.splice(i, 1);
+
           // Call matchOrder() recursively
+          matchOrder(
+            inputToken,
+            inputQuantity,
+            inputCreator,
+            inputTransaction,
+            orderbook,
+            inputPrice,
+            foreignCalls
+          );
         }
       }
     }
   } else {
     // Market order
+    for (let i = 0; i < orderbook.length; i++) {
+      const fillAmount = inputQuantity * (1 / orderbook[i].price); // Existing price in units of existingToken/inputToken
+      if (fillAmount === orderbook[i].quantity) {
+        // ~~ Matched orders completely filled ~~
+        // Send tokens from new order to existing order creator
+        foreignCalls.push(
+          {
+            contract: inputToken,
+            input: {
+              function: "transfer",
+              target: orderbook[i].creator,
+              qty: inputQuantity,
+            },
+          },
+          // Send tokens from existing order to new order creator
+          {
+            contract: orderbook[i].token,
+            input: {
+              function: "transfer",
+              target: inputCreator,
+              qty: orderbook[i].quantity,
+            },
+          }
+        );
+        // Remove existing order
+        orderbook.splice(i, 1);
+
+        return {
+          orderbook,
+          foreignCalls,
+        };
+      } else if (fillAmount < orderbook[i].quantity) {
+        // ~~ Input order filled; existing order not completely filled ~~
+        // Send existing order creator tokens from new order
+      } else if (fillAmount > orderbook[i].quantity) {
+        // ~~ Input order not completely filled; existing order filled ~~
+        // Send existing order creator tokens from new order
+      }
+    }
   }
 }

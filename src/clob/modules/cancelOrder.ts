@@ -2,13 +2,14 @@ import {
   ActionInterface,
   StateInterface,
   CancelOrderInterface,
+  StateInterface,
 } from "../faces";
 import { ensureValidInteraction, isAddress } from "../utils";
 
 export const CancelOrder = async (
   state: StateInterface,
   action: ActionInterface
-) => {
+): Promise<StateInterface> => {
   const caller = action.caller;
   const input: CancelOrderInterface = action.input;
 

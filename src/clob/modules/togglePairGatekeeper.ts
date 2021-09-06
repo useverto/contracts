@@ -1,6 +1,6 @@
 import { ActionInterface, StateInterface, StateInterface } from "../faces";
 
-export const Halt = (
+export const TogglePairGatekeeper = (
   state: StateInterface,
   action: ActionInterface
 ): StateInterface => {
@@ -9,8 +9,8 @@ export const Halt = (
   // Ensure that only the emergency wallet has access to this function
   ContractAssert(
     caller === state.emergencyHaltWallet,
-    "Caller cannot halt or resume the protocol"
+    "Caller cannot toggle the gatekeeper"
   );
 
-  return { ...state, halted: !state.halted };
+  return { ...state, pairGatekeeper: !state.pairGatekeeper };
 };

@@ -3,7 +3,7 @@ import { ActionInterface, StateInterface, AddPairInterface } from "../faces";
 export const AddPair = async (
   state: StateInterface,
   action: ActionInterface
-) => {
+): Promise<StateInterface> => {
   const caller = action.caller;
   const input: AddPairInterface = action.input;
 
@@ -56,5 +56,5 @@ export const AddPair = async (
     pair: newPair,
     orders: [],
   });
-  return { ...state };
+  return state;
 };
