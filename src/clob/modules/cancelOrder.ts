@@ -2,7 +2,6 @@ import {
   ActionInterface,
   StateInterface,
   CancelOrderInterface,
-  StateInterface,
 } from "../faces";
 import { ensureValidInteraction, isAddress } from "../utils";
 

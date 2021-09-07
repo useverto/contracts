@@ -15,6 +15,7 @@ export const ensureValidTransfer = async (
   try {
     const tx = await SmartWeave.unsafeClient.transactions.get(transferTx);
 
+    // @ts-ignore
     tx.get("tags").forEach((tag) => {
       if (tag.get("name", { decode: true, string: true }) === "Input") {
         const input = JSON.parse(
@@ -29,7 +30,7 @@ export const ensureValidTransfer = async (
 
         // make sure that the target of the transfer transaction is THIS (the clob) contract
         ContractAssert(
-          input.target === SmartWeave.transaction.tags["Contract"],
+          input.target === getContractID(),
           "The target of this transfer is not this contract"
         );
       }
@@ -71,5 +72,16 @@ export const ensureValidInteraction = async (
  * Returns if a string is a valid Arweave address or ID
  *
  * @param addr String to validate
+ *
+ * @returns Valid address or not
  */
 export const isAddress = (addr: string) => /[a-z0-9_-]{43}/i.test(addr);
+
+/**
+ * Get the ID of this contract
+ *
+ * @returns Contract ID
+ */
+export const getContractID = (): string =>
+  // @ts-ignore
+  SmartWeave.transaction.tags.find(({ name }) => name === "Contract").value;

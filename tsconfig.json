@@ -5,7 +5,8 @@
     "outDir": "./dist",
     "moduleResolution": "node",
     "isolatedModules": true,
-    "declaration": true
+    "declaration": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules"]

@@ -1,12 +1,13 @@
 import { StateInterface, ActionInterface } from "./faces";
-import { Halt } from "./modules/halt";
-import { AddPair } from "./modules/addPair";
+
+import { TogglePairGatekeeper } from "./modules/togglePairGatekeeper";
+import { SetCommunityContract } from "./modules/setCommunityContract";
 import { CreateOrder } from "./modules/createOrder";
 import { CancelOrder } from "./modules/cancelOrder";
 import { ReadOutbox } from "./modules/readOutbox";
+import { AddPair } from "./modules/addPair";
 import { Invoke } from "./modules/invoke";
-import { TogglePairGatekeeper } from "./modules/togglePairGatekeeper";
-import { SetCommunityContract } from "./modules/setCommunityContract";
+import { Halt } from "./modules/halt";
 
 export async function handle(state: StateInterface, action: ActionInterface) {
   ContractAssert(
