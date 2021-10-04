@@ -7,8 +7,16 @@ const fs = require("fs");
     .filter((el) => el.isDirectory())
     .map((el) => `${el.name}/index.ts`);
 
+  const testEntries = fs
+    .readdirSync("./__tests__", { withFileTypes: true })
+    .filter((el) => !el.isDirectory())
+    .map(({ name }) => name);
+
   await build({
-    entryPoints: contractEntries.map((entry) => `./src/${entry}`),
+    entryPoints: [
+      ...contractEntries.map((entry) => `./src/${entry}`),
+      ...testEntries.map((entry) => `./__tests__/${entry}`),
+    ],
     outdir: "./dist",
     format: "esm",
     bundle: true,

@@ -5,10 +5,8 @@
     "deploy:amm": "CONTRACT_NAME=amm node ./scripts/deploy.js",
     "fmt": "prettier --write ."
   },
-  "gitHooks": {
-    "pre-commit": "prettier --write . && git add -A"
-  },
   "devDependencies": {
+    "arlocal": "^1.1.3",
     "arweave": "^1.10.13",
     "esbuild": "^0.11.12",
     "prettier": "^2.2.1",

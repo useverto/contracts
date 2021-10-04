@@ -108,124 +108,21 @@ function matchOrder(
   inputPrice?: number,
   foreignCalls?: ForeignCallInterface[]
 ) {
-  if (inputPrice) {
-    // Limit order
-    ContractAssert(
-      typeof inputPrice === "number",
-      "Invalid price: not a number"
-    );
-    const fillAmount = inputQuantity * inputPrice;
-    for (let i = 0; i < orderbook.length; i++) {
-      if (inputPrice === orderbook[i].price) {
-        if (fillAmount === orderbook[i].quantity) {
-          // ~~ Matched orders completely filled ~~
-          // Send tokens from new order to existing order creator
-          foreignCalls.push(
-            {
-              contract: inputToken,
-              input: {
-                function: "transfer",
-                target: orderbook[i].creator,
-                qty: inputQuantity,
-              },
-            },
-            // Send tokens from existing order to new order creator
-            {
-              contract: orderbook[i].token,
-              input: {
-                function: "transfer",
-                target: inputCreator,
-                qty: orderbook[i].quantity,
-              },
-            }
-          );
-          // Remove existing order
-          orderbook.splice(i, 1);
-
-          return {
-            orderbook,
-            foreignCalls,
-          };
-        } else if (fillAmount < orderbook[i].quantity) {
-          // ~~ Input order filled; existing order not completely filled ~~
-          // Send existing order creator tokens from new order
-          foreignCalls.push(
-            {
-              contract: inputToken,
-              input: {
-                function: "transfer",
-                target: orderbook[i].creator,
-                qty: inputQuantity,
-              },
-            },
-            // Send new order creator tokens from existing order
-            {
-              contract: orderbook[i].token,
-              input: {
-                function: "transfer",
-                target: inputCreator,
-                qty: fillAmount,
-              },
-            }
-          );
-          // Keep existing order but subtract order amount from input
-          orderbook[i].quantity -= fillAmount;
-
-          return {
-            orderbook,
-            foreignCalls,
-          };
-        } else if (fillAmount > orderbook[i].quantity) {
-          // ~~ Input order not completely filled; existing order filled ~~
-          // Send existing order creator tokens from new order
-          foreignCalls.push(
-            {
-              contract: inputToken,
-              input: {
-                function: "transfer",
-                target: orderbook[i].creator,
-                qty: inputQuantity - orderbook[i].quantity * inputPrice,
-              },
-            },
-            // Send new order creator tokens from existing order
-            {
-              contract: orderbook[i].token,
-              input: {
-                function: "transfer",
-                target: inputCreator,
-                qty: orderbook[i].quantity,
-              },
-            }
-          );
-
-          // Remove existing order & subtract input order amount from existing
-          orderbook.push({
-            transaction: inputTransaction,
-            creator: inputCreator,
-            token: inputToken,
-            price: inputPrice,
-            quantity: inputQuantity - orderbook[i].quantity * inputPrice, // Input price in units of inputToken/existingToken
-            originalQuantity: inputQuantity,
-          });
-          orderbook.splice(i, 1);
-
-          // Call matchOrder() recursively
-          matchOrder(
-            inputToken,
-            inputQuantity,
-            inputCreator,
-            inputTransaction,
-            orderbook,
-            inputPrice,
-            foreignCalls
-          );
-        }
-      }
+  let fillAmount;
+  for (let i = 0; i < orderbook.length; i++) {
+    const convertedExistingPrice = 1 / orderbook[i].price;
+    if (inputPrice) {
+      // Limit Order
+      ContractAssert(
+        typeof inputPrice === "number",
+        "Invalid price: not a number"
+      );
+      fillAmount = inputQuantity * inputPrice;
+    } else {
+      // Market order
+      fillAmount = inputQuantity * convertedExistingPrice; // Existing price in units of existingToken/inputToken
     }
-  } else {
-    // Market order
-    for (let i = 0; i < orderbook.length; i++) {
-      const fillAmount = inputQuantity * (1 / orderbook[i].price); // Existing price in units of existingToken/inputToken
+    if (inputPrice === convertedExistingPrice || !inputPrice) {
       if (fillAmount === orderbook[i].quantity) {
         // ~~ Matched orders completely filled ~~
         // Send tokens from new order to existing order creator
@@ -258,9 +155,78 @@ function matchOrder(
       } else if (fillAmount < orderbook[i].quantity) {
         // ~~ Input order filled; existing order not completely filled ~~
         // Send existing order creator tokens from new order
+        foreignCalls.push(
+          {
+            contract: inputToken,
+            input: {
+              function: "transfer",
+              target: orderbook[i].creator,
+              qty: inputQuantity,
+            },
+          },
+          // Send new order creator tokens from existing order
+          {
+            contract: orderbook[i].token,
+            input: {
+              function: "transfer",
+              target: inputCreator,
+              qty: fillAmount,
+            },
+          }
+        );
+        // Keep existing order but subtract order amount from input
+        orderbook[i].quantity -= fillAmount;
+
+        return {
+          orderbook,
+          foreignCalls,
+        };
       } else if (fillAmount > orderbook[i].quantity) {
         // ~~ Input order not completely filled; existing order filled ~~
         // Send existing order creator tokens from new order
+        foreignCalls.push(
+          {
+            contract: inputToken,
+            input: {
+              function: "transfer",
+              target: orderbook[i].creator,
+              qty:
+                inputQuantity - orderbook[i].quantity * convertedExistingPrice,
+            },
+          },
+          // Send new order creator tokens from existing order
+          {
+            contract: orderbook[i].token,
+            input: {
+              function: "transfer",
+              target: inputCreator,
+              qty: orderbook[i].quantity,
+            },
+          }
+        );
+
+        // Remove existing order & subtract input order amount from existing
+        orderbook.push({
+          transaction: inputTransaction,
+          creator: inputCreator,
+          token: inputToken,
+          price: convertedExistingPrice,
+          quantity:
+            inputQuantity - orderbook[i].quantity * convertedExistingPrice, // Input price in units of inputToken/existingToken
+          originalQuantity: inputQuantity,
+        });
+        orderbook.splice(i, 1);
+
+        // Call matchOrder() recursively
+        matchOrder(
+          inputToken,
+          inputQuantity,
+          inputCreator,
+          inputTransaction,
+          orderbook,
+          convertedExistingPrice,
+          foreignCalls
+        );
       }
     }
   }
