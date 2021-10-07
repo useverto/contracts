@@ -12,14 +12,19 @@ const fs = require("fs");
     .filter((el) => !el.isDirectory())
     .map(({ name }) => name);
 
+  // build contracts
   await build({
-    entryPoints: [
-      ...contractEntries.map((entry) => `./src/${entry}`),
-      ...testEntries.map((entry) => `./__tests__/${entry}`),
-    ],
+    entryPoints: contractEntries.map((entry) => `./src/${entry}`),
     outdir: "./dist",
     format: "esm",
     bundle: true,
+  });
+
+  // build tests
+  await build({
+    entryPoints: testEntries.map((entry) => `./__tests__/${entry}`),
+    outdir: "./dist/tests",
+    format: "cjs",
   });
 
   for (const entry of contractEntries) {
