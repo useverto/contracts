@@ -16,7 +16,7 @@ export const Invoke = async (
   state.foreignCalls.push({
     txID: SmartWeave.transaction.id,
     contract: input.foreignContract,
-    input: input.invocation,
+    input: input.invocation
   });
 
   return state;

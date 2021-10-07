@@ -51,7 +51,7 @@ export const ensureValidInteraction = async (
   interactionID: string
 ) => {
   const {
-    validity: contractTxValidities,
+    validity: contractTxValidities
     // @ts-ignore
   } = await SmartWeave.contracts.readContractState(contractID, undefined, true);
 

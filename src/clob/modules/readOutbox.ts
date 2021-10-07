@@ -40,7 +40,7 @@ export const ReadOutbox = async (
   const foreignAction = {
     ...action,
     caller: input.contract,
-    input: invocation,
+    input: invocation
   };
 
   // Evaluate the state

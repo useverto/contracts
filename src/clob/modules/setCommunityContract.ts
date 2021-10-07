@@ -1,7 +1,7 @@
 import {
   ActionInterface,
   SetCommunityContractInterface,
-  StateInterface,
+  StateInterface
 } from "../faces";
 import { isAddress } from "../utils";
 

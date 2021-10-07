@@ -3,7 +3,7 @@ import {
   StateInterface,
   CreateOrderInterface,
   OrderInterface,
-  ForeignCallInterface,
+  ForeignCallInterface
 } from "../faces";
 import { ensureValidTransfer, isAddress } from "../utils";
 
@@ -132,8 +132,8 @@ function matchOrder(
             input: {
               function: "transfer",
               target: orderbook[i].creator,
-              qty: inputQuantity,
-            },
+              qty: inputQuantity
+            }
           },
           // Send tokens from existing order to new order creator
           {
@@ -141,8 +141,8 @@ function matchOrder(
             input: {
               function: "transfer",
               target: inputCreator,
-              qty: orderbook[i].quantity,
-            },
+              qty: orderbook[i].quantity
+            }
           }
         );
         // Remove existing order
@@ -150,7 +150,7 @@ function matchOrder(
 
         return {
           orderbook,
-          foreignCalls,
+          foreignCalls
         };
       } else if (fillAmount < orderbook[i].quantity) {
         // ~~ Input order filled; existing order not completely filled ~~
@@ -161,8 +161,8 @@ function matchOrder(
             input: {
               function: "transfer",
               target: orderbook[i].creator,
-              qty: inputQuantity,
-            },
+              qty: inputQuantity
+            }
           },
           // Send new order creator tokens from existing order
           {
@@ -170,8 +170,8 @@ function matchOrder(
             input: {
               function: "transfer",
               target: inputCreator,
-              qty: fillAmount,
-            },
+              qty: fillAmount
+            }
           }
         );
         // Keep existing order but subtract order amount from input
@@ -179,7 +179,7 @@ function matchOrder(
 
         return {
           orderbook,
-          foreignCalls,
+          foreignCalls
         };
       } else if (fillAmount > orderbook[i].quantity) {
         // ~~ Input order not completely filled; existing order filled ~~
@@ -191,8 +191,8 @@ function matchOrder(
               function: "transfer",
               target: orderbook[i].creator,
               qty:
-                inputQuantity - orderbook[i].quantity * convertedExistingPrice,
-            },
+                inputQuantity - orderbook[i].quantity * convertedExistingPrice
+            }
           },
           // Send new order creator tokens from existing order
           {
@@ -200,8 +200,8 @@ function matchOrder(
             input: {
               function: "transfer",
               target: inputCreator,
-              qty: orderbook[i].quantity,
-            },
+              qty: orderbook[i].quantity
+            }
           }
         );
 
@@ -213,7 +213,7 @@ function matchOrder(
           price: convertedExistingPrice,
           quantity:
             inputQuantity - orderbook[i].quantity * convertedExistingPrice, // Input price in units of inputToken/existingToken
-          originalQuantity: inputQuantity,
+          originalQuantity: inputQuantity
         });
         orderbook.splice(i, 1);
 

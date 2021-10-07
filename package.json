@@ -4,7 +4,11 @@
     "deploy:clob": "CONTRACT_NAME=clob node ./scripts/deploy.js",
     "deploy:amm": "CONTRACT_NAME=amm node ./scripts/deploy.js",
     "fmt": "prettier --write .",
-    "test": "jest dist/tests"
+    "test": "jest dist/tests",
+    "fmt:check": "prettier --check ."
+  },
+  "gitHooks": {
+    "pre-commit": "prettier --write . && git add -A"
   },
   "devDependencies": {
     "@types/jest": "^27.0.2",

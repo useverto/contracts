@@ -17,14 +17,14 @@ const fs = require("fs");
     entryPoints: contractEntries.map((entry) => `./src/${entry}`),
     outdir: "./dist",
     format: "esm",
-    bundle: true,
+    bundle: true
   });
 
   // build tests
   await build({
     entryPoints: testEntries.map((entry) => `./__tests__/${entry}`),
     outdir: "./dist/tests",
-    format: "cjs",
+    format: "cjs"
   });
 
   for (const entry of contractEntries) {

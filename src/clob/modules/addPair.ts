@@ -72,7 +72,7 @@ export const AddPair = async (
 
   state.pairs.push({
     pair: newPair,
-    orders: [],
+    orders: []
   });
 
   return state;

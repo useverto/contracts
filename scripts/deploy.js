@@ -5,7 +5,7 @@ const fs = require("fs");
 const client = new Arweave({
   host: "arweave.net",
   port: 443,
-  protocol: "https",
+  protocol: "https"
 });
 
 const contract = process.env.CONTRACT_NAME;

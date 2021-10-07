@@ -11,7 +11,10 @@ let arlocal: ArLocal;
 let port: number;
 
 const COMMUNITY_CONTRACT = "t9T7DIOGxx4VWXoCEeYYarFYeERTpWIC1V3y-BPZgKE";
-const EXAMPLE_TOKEN_PAIR = ["usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A", "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ"];
+const EXAMPLE_TOKEN_PAIR = [
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
+  "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ"
+];
 
 describe("Test the clob contract", () => {
   let CONTRACT_ID: string;
@@ -37,7 +40,7 @@ describe("Test the clob contract", () => {
     arweave = new Arweave({
       host: "localhost",
       port,
-      protocol: "http",
+      protocol: "http"
     });
 
     wallet1.jwk = await arweave.wallets.generate();
@@ -45,19 +48,26 @@ describe("Test the clob contract", () => {
     wallet1.address = await arweave.wallets.getAddress(wallet1.jwk);
     wallet2.address = await arweave.wallets.getAddress(wallet2.jwk);
 
-    const contractSrc = new TextDecoder().decode(await readFile(join(__dirname, "../clob/index.js")))
+    const contractSrc = new TextDecoder().decode(
+      await readFile(join(__dirname, "../clob/index.js"))
+    );
     const initialState: StateInterface = {
       emergencyHaltWallet: wallet1.address,
-      halted: false,
+      halted: true,
       protocolFeePercent: 5,
       pairGatekeeper: false,
-      communityContract: COMMUNITY_CONTRACT,
+      communityContract: undefined,
       pairs: [],
       invocations: [],
       foreignCalls: []
     };
 
-    CONTRACT_ID = await createContract(arweave, wallet1.jwk, contractSrc, JSON.stringify(initialState));
+    CONTRACT_ID = await createContract(
+      arweave,
+      wallet1.jwk,
+      contractSrc,
+      JSON.stringify(initialState)
+    );
 
     await mine();
   });
@@ -66,14 +76,23 @@ describe("Test the clob contract", () => {
     await arlocal.stop();
   });
 
-  it('should accept new pairs', async () => {
+  it("should unhalt contract", async () => {
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
-      function: "addPair",
-      pair: EXAMPLE_TOKEN_PAIR
+      function: "halt"
     });
     await mine();
 
-    expect((await state()).pairs).toContainEqual({ pair: EXAMPLE_TOKEN_PAIR, orders: [] })
+    expect((await state()).halted).toEqual(false);
+  });
+
+  it("should set community contract", async () => {
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+      function: "setCommunityContract",
+      id: COMMUNITY_CONTRACT
+    });
+    await mine();
+
+    expect((await state()).communityContract).toEqual(COMMUNITY_CONTRACT);
   });
 });
 

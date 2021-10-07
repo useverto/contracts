@@ -1,7 +1,7 @@
 import {
   ActionInterface,
   StateInterface,
-  CancelOrderInterface,
+  CancelOrderInterface
 } from "../faces";
 import { ensureValidInteraction, isAddress } from "../utils";
 
@@ -41,8 +41,8 @@ export const CancelOrder = async (
     input: {
       function: "transfer",
       target: caller,
-      qty: order.quantity,
-    },
+      qty: order.quantity
+    }
   });
 
   // The pair that the order belongs to
