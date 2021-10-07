@@ -8,8 +8,8 @@ import Arweave from "arweave";
 
 let arweave: Arweave;
 let arlocal: ArLocal;
-let port: number;
 
+const port = 1986;
 const COMMUNITY_CONTRACT = "t9T7DIOGxx4VWXoCEeYYarFYeERTpWIC1V3y-BPZgKE";
 const EXAMPLE_TOKEN_PAIR = [
   "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
@@ -32,7 +32,6 @@ describe("Test the clob contract", () => {
   }
 
   beforeAll(async () => {
-    port = Math.round(Math.random() * 10000);
     arlocal = new ArLocal(port, false);
 
     await arlocal.start();
