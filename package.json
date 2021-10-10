@@ -1,8 +1,6 @@
 {
   "scripts": {
-    "build-all": "node ./scripts/build.js",
-    "deploy:clob": "CONTRACT_NAME=clob node ./scripts/deploy.js",
-    "deploy:amm": "CONTRACT_NAME=amm node ./scripts/deploy.js",
+    "build": "node ./build.js",
     "fmt": "prettier --write .",
     "test": "jest dist/tests",
     "fmt:check": "prettier --check ."

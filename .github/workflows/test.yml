@@ -20,7 +20,7 @@ jobs:
         run: yarn
 
       - name: Build contracts
-        run: yarn build-all
+        run: yarn build
 
       - name: Run tests
         run: yarn test
