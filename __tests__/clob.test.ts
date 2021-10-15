@@ -167,6 +167,7 @@ describe("Test the clob contract", () => {
     await mine();
 
     // test if the halt blocker works
+    // this should fail
     const { type } = await interactWriteDryRun(
       arweave,
       wallet1.jwk,
@@ -186,6 +187,29 @@ describe("Test the clob contract", () => {
 
     interactions.push(iID, i2ID);
     expect((await state()).halted).toEqual(false);
+  });
+
+  it("should not allow halting for other wallets", async () => {
+    await interactWrite(arweave, wallet2.jwk, CONTRACT_ID, {
+      function: "halt"
+    });
+    await mine();
+
+    const contractState = await state();
+
+    expect(contractState.halted).toEqual(false);
+  });
+
+  it("should not allow updating the community contracts for other wallets", async () => {
+    await interactWrite(arweave, wallet2.jwk, CONTRACT_ID, {
+      function: "setCommunityContract",
+      id: COMMUNITY_CONTRACT
+    });
+    await mine();
+
+    const contractState = await state();
+
+    expect(contractState.communityContract).toEqual(localCommunityContract);
   });
 
   it("should add a new pair", async () => {
@@ -237,6 +261,32 @@ describe("Test the clob contract", () => {
     interactions.push(orderID);
     expect(order).not.toEqual(undefined);
   });
+
+  // TODO: check seller balance (expect it to be bal - 1000 qty)
+  // to see if the sell indeed happened
+
+  it("should cancel order", async () => {
+    const iID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+      function: "cancelOrder",
+      transaction: orderID
+    });
+    await mine();
+
+    const contractState = await state();
+    const onContractPair = contractState.pairs.find(
+      ({ pair }) =>
+        pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]
+    );
+    const order = onContractPair?.orders.find(
+      ({ transaction: tx }) => tx === orderID
+    );
+
+    interactions.push(iID);
+    expect(order).toEqual(undefined);
+  });
+
+  // TODO: check the canceller balance (expect it to be the initial one again)
+  // to see if the canceling was succesful
 
   it("should have all interactions valid", async () => {
     const { validity } = await readContract(
