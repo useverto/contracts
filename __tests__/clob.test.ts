@@ -37,7 +37,10 @@ describe("Test the clob contract", () => {
 
   let CONTRACT_ID: string;
   let localCommunityContract: string;
+  let orderID: string;
+
   let localTokenPair = [];
+  let interactions: string[] = [];
 
   async function state(): Promise<StateInterface> {
     return await readContract(arweave, CONTRACT_ID);
@@ -146,18 +149,19 @@ describe("Test the clob contract", () => {
   });
 
   it("should set community contract", async () => {
-    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+    const iID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "setCommunityContract",
       id: localCommunityContract
     });
     await mine();
 
+    interactions.push(iID);
     expect((await state()).communityContract).toEqual(localCommunityContract);
   });
 
   it("should halt contract", async () => {
     // halt
-    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+    const iID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "halt"
     });
     await mine();
@@ -175,16 +179,17 @@ describe("Test the clob contract", () => {
     expect(type).toEqual("error");
 
     // unhalt
-    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+    const i2ID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "halt"
     });
     await mine();
 
+    interactions.push(iID, i2ID);
     expect((await state()).halted).toEqual(false);
   });
 
   it("should add a new pair", async () => {
-    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+    const iID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "addPair",
       pair: localTokenPair
     });
@@ -196,6 +201,7 @@ describe("Test the clob contract", () => {
         pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]
     );
 
+    interactions.push(iID);
     expect(onContractPair).not.toEqual(undefined);
   });
 
@@ -211,7 +217,7 @@ describe("Test the clob contract", () => {
       }
     );
     await mine();
-    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+    orderID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "createOrder",
       transaction,
       pair: localTokenPair,
@@ -225,10 +231,24 @@ describe("Test the clob contract", () => {
         pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]
     );
     const order = onContractPair?.orders.find(
-      ({ transaction: tx }) => tx === transaction
+      ({ transaction: tx }) => tx === orderID
     );
 
+    interactions.push(orderID);
     expect(order).not.toEqual(undefined);
+  });
+
+  it("should have all interactions valid", async () => {
+    const { validity } = await readContract(
+      arweave,
+      CONTRACT_ID,
+      undefined,
+      true
+    );
+
+    for (const interaction of interactions) {
+      expect(!!validity[interaction]).toEqual(true);
+    }
   });
 });
 
