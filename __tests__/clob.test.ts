@@ -1,8 +1,10 @@
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { StateInterface } from "../src/clob/faces";
+import { StateInterface as CommunityContractStateInterface } from "../src/community/faces";
 import { createContract, interactWrite, readContract } from "smartweave";
 import { readFile } from "fs/promises";
 import { join } from "path";
+import ArLocalUtils from "arlocal-utils";
 import ArLocal from "arlocal";
 import Arweave from "arweave";
 
@@ -16,8 +18,9 @@ const EXAMPLE_TOKEN_PAIR = [
   "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ"
 ];
 
+jest.setTimeout(120000);
+
 describe("Test the clob contract", () => {
-  let CONTRACT_ID: string;
   let wallet1: {
     address: string;
     jwk: JWKInterface;
@@ -27,11 +30,16 @@ describe("Test the clob contract", () => {
     jwk: JWKInterface;
   } = { address: "", jwk: undefined };
 
+  let CONTRACT_ID: string;
+  let localCommunityContract: string;
+  let localTokenPair = [];
+
   async function state(): Promise<StateInterface> {
     return await readContract(arweave, CONTRACT_ID);
   }
 
   beforeAll(async () => {
+    // init arlocal
     arlocal = new ArLocal(port, false);
 
     await arlocal.start();
@@ -42,11 +50,13 @@ describe("Test the clob contract", () => {
       protocol: "http"
     });
 
+    // generate test wallets
     wallet1.jwk = await arweave.wallets.generate();
     wallet2.jwk = await arweave.wallets.generate();
     wallet1.address = await arweave.wallets.getAddress(wallet1.jwk);
     wallet2.address = await arweave.wallets.getAddress(wallet2.jwk);
 
+    // deploy contract locally
     const contractSrc = new TextDecoder().decode(
       await readFile(join(__dirname, "../clob/index.js"))
     );
@@ -69,6 +79,61 @@ describe("Test the clob contract", () => {
     );
 
     await mine();
+
+    // copy testing contracts from mainnet
+    const arlocalUtils = new ArLocalUtils(arweave, wallet1.jwk);
+
+    // copy 2 PSTs for testing
+    for (const pstID of EXAMPLE_TOKEN_PAIR) {
+      localTokenPair.push(
+        await arlocalUtils.copyContract(pstID, false, (state) => {
+          // add some balance to the test wallets
+          state.balances[wallet1.address] = 10000;
+          state.balances[wallet2.address] = 10000;
+
+          return state;
+        })
+      );
+    }
+
+    // copy the community contract
+    localCommunityContract = await arlocalUtils.copyContract(
+      COMMUNITY_CONTRACT,
+      false,
+      (state: CommunityContractStateInterface) => {
+        // add testing wallets to initial state
+        state.people.push(
+          {
+            username: "test_" + wallet1.address.slice(0, 5),
+            name: "Test User",
+            addresses: [wallet1.address],
+            image: "",
+            bio: "",
+            links: {}
+          },
+          {
+            username: "test_" + wallet2.address.slice(0, 5),
+            name: "Test User2",
+            addresses: [wallet2.address],
+            image: "",
+            bio: "",
+            links: {}
+          }
+        );
+
+        // push testing PSTs
+        for (const id of localTokenPair)
+          state.tokens.push({
+            id,
+            type: "community",
+            lister: "test_" + wallet1.address.slice(0, 5)
+          });
+
+        return state;
+      }
+    );
+
+    await mine();
   });
 
   afterAll(async () => {
@@ -87,11 +152,11 @@ describe("Test the clob contract", () => {
   it("should set community contract", async () => {
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "setCommunityContract",
-      id: COMMUNITY_CONTRACT
+      id: localCommunityContract
     });
     await mine();
 
-    expect((await state()).communityContract).toEqual(COMMUNITY_CONTRACT);
+    expect((await state()).communityContract).toEqual(localCommunityContract);
   });
 });
 
