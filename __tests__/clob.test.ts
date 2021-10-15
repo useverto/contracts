@@ -1,7 +1,12 @@
 import { JWKInterface } from "arweave/node/lib/wallet";
 import { StateInterface } from "../src/clob/faces";
 import { StateInterface as CommunityContractStateInterface } from "../src/community/faces";
-import { createContract, interactWrite, readContract } from "smartweave";
+import {
+  createContract,
+  interactWrite,
+  interactWriteDryRun,
+  readContract
+} from "smartweave";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import ArLocalUtils from "arlocal-utils";
@@ -62,7 +67,7 @@ describe("Test the clob contract", () => {
     );
     const initialState: StateInterface = {
       emergencyHaltWallet: wallet1.address,
-      halted: true,
+      halted: false,
       protocolFeePercent: 5,
       pairGatekeeper: false,
       communityContract: undefined,
@@ -140,15 +145,6 @@ describe("Test the clob contract", () => {
     await arlocal.stop();
   });
 
-  it("should unhalt contract", async () => {
-    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
-      function: "halt"
-    });
-    await mine();
-
-    expect((await state()).halted).toEqual(false);
-  });
-
   it("should set community contract", async () => {
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "setCommunityContract",
@@ -157,6 +153,50 @@ describe("Test the clob contract", () => {
     await mine();
 
     expect((await state()).communityContract).toEqual(localCommunityContract);
+  });
+
+  it("should halt contract", async () => {
+    // halt
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+      function: "halt"
+    });
+    await mine();
+
+    // test if the halt blocker works
+    const { type } = await interactWriteDryRun(
+      arweave,
+      wallet1.jwk,
+      CONTRACT_ID,
+      {
+        function: "setCommunityContract",
+        id: COMMUNITY_CONTRACT
+      }
+    );
+    expect(type).toEqual("error");
+
+    // unhalt
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+      function: "halt"
+    });
+    await mine();
+
+    expect((await state()).halted).toEqual(false);
+  });
+
+  it("should add a new pair", async () => {
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+      function: "addPair",
+      pair: localTokenPair
+    });
+    await mine();
+
+    const contractState = await state();
+    const onContractPair = contractState.pairs.find(
+      ({ pair }) =>
+        pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]
+    );
+
+    expect(onContractPair).not.toEqual(undefined);
   });
 });
 
