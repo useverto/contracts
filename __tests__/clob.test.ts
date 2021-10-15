@@ -262,6 +262,8 @@ describe("Test the clob contract", () => {
     expect(order).not.toEqual(undefined);
   });
 
+  // TODO: test order matching and recieving for the other wallet (wallet2)
+
   // TODO: check seller balance (expect it to be bal - 1000 qty)
   // to see if the sell indeed happened
 
