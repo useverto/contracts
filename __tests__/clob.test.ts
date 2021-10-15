@@ -198,6 +198,38 @@ describe("Test the clob contract", () => {
 
     expect(onContractPair).not.toEqual(undefined);
   });
+
+  it("should create new order", async () => {
+    const transaction = await interactWrite(
+      arweave,
+      wallet1.jwk,
+      localTokenPair[0],
+      {
+        function: "transfer",
+        qty: 1000,
+        target: CONTRACT_ID
+      }
+    );
+    await mine();
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+      function: "createOrder",
+      transaction,
+      pair: localTokenPair,
+      price: 10
+    });
+    await mine();
+
+    const contractState = await state();
+    const onContractPair = contractState.pairs.find(
+      ({ pair }) =>
+        pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]
+    );
+    const order = onContractPair?.orders.find(
+      ({ transaction: tx }) => tx === transaction
+    );
+
+    expect(order).not.toEqual(undefined);
+  });
 });
 
 async function mine() {
