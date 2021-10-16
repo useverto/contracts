@@ -40,7 +40,6 @@ describe("Test the clob contract", () => {
   let orderID: string;
 
   let localTokenPair = [];
-  let interactions: string[] = [];
 
   async function state(): Promise<StateInterface> {
     return await readContract(arweave, CONTRACT_ID);
@@ -149,19 +148,18 @@ describe("Test the clob contract", () => {
   });
 
   it("should set community contract", async () => {
-    const iID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "setCommunityContract",
       id: localCommunityContract
     });
     await mine();
 
-    interactions.push(iID);
     expect((await state()).communityContract).toEqual(localCommunityContract);
   });
 
   it("should halt contract", async () => {
     // halt
-    const iID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "halt"
     });
     await mine();
@@ -180,12 +178,11 @@ describe("Test the clob contract", () => {
     expect(type).toEqual("error");
 
     // unhalt
-    const i2ID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "halt"
     });
     await mine();
 
-    interactions.push(iID, i2ID);
     expect((await state()).halted).toEqual(false);
   });
 
@@ -212,8 +209,19 @@ describe("Test the clob contract", () => {
     expect(contractState.communityContract).toEqual(localCommunityContract);
   });
 
+  it("should toggle pair gatekeeper", async () => {
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+      function: "togglePairGatekeeper"
+    });
+    await mine();
+
+    const contractState = await state();
+
+    expect(contractState.pairGatekeeper).toEqual(true);
+  });
+
   it("should add a new pair", async () => {
-    const iID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "addPair",
       pair: localTokenPair
     });
@@ -225,7 +233,6 @@ describe("Test the clob contract", () => {
         pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]
     );
 
-    interactions.push(iID);
     expect(onContractPair).not.toEqual(undefined);
   });
 
@@ -258,7 +265,6 @@ describe("Test the clob contract", () => {
       ({ transaction: tx }) => tx === orderID
     );
 
-    interactions.push(orderID);
     expect(order).not.toEqual(undefined);
   });
 
@@ -268,7 +274,7 @@ describe("Test the clob contract", () => {
   // to see if the sell indeed happened
 
   it("should cancel order", async () => {
-    const iID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "cancelOrder",
       transaction: orderID
     });
@@ -283,25 +289,11 @@ describe("Test the clob contract", () => {
       ({ transaction: tx }) => tx === orderID
     );
 
-    interactions.push(iID);
     expect(order).toEqual(undefined);
   });
 
   // TODO: check the canceller balance (expect it to be the initial one again)
   // to see if the canceling was succesful
-
-  it("should have all interactions valid", async () => {
-    const { validity } = await readContract(
-      arweave,
-      CONTRACT_ID,
-      undefined,
-      true
-    );
-
-    for (const interaction of interactions) {
-      expect(!!validity[interaction]).toEqual(true);
-    }
-  });
 });
 
 async function mine() {

@@ -38,6 +38,10 @@ export interface HaltInterface {
   function: "halt";
 }
 
+export interface TogglePairGatekeeperInterface {
+  function: "togglePairGatekeeper";
+}
+
 export interface SetCommunityContractInterface {
   function: "setCommunityContract";
   id: string;
