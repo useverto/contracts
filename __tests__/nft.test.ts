@@ -1,5 +1,5 @@
 import { JWKInterface } from "arweave/node/lib/wallet";
-import { StateInterface } from "../src/invite/faces";
+import { StateInterface } from "../src/nft/faces";
 import {
   createContract,
   interactRead,
@@ -14,19 +14,16 @@ import Arweave from "arweave";
 let arweave: Arweave;
 let arlocal: ArLocal;
 
-const port = 1989;
+const port = 1990;
 
-describe("Test the invite contract", () => {
+describe("Test the NFT contract", () => {
   let CONTRACT_ID: string;
+  let CONTRACT2_ID: string;
   let wallet1: {
     address: string;
     jwk: JWKInterface;
   } = { address: "", jwk: undefined };
   let wallet2: {
-    address: string;
-    jwk: JWKInterface;
-  } = { address: "", jwk: undefined };
-  let wallet3: {
     address: string;
     jwk: JWKInterface;
   } = { address: "", jwk: undefined };
@@ -48,25 +45,24 @@ describe("Test the invite contract", () => {
 
     wallet1.jwk = await arweave.wallets.generate();
     wallet2.jwk = await arweave.wallets.generate();
-    wallet3.jwk = await arweave.wallets.generate();
     wallet1.address = await arweave.wallets.getAddress(wallet1.jwk);
     wallet2.address = await arweave.wallets.getAddress(wallet2.jwk);
-    wallet3.address = await arweave.wallets.getAddress(wallet3.jwk);
 
     const contractSrc = new TextDecoder().decode(
-      await readFile(join(__dirname, "../invite/index.js"))
+      await readFile(join(__dirname, "../nft/index.js"))
     );
     const initialState: StateInterface = {
-      name: "Verto Beta Testers' Edition",
-      ticker: "VBTE",
-      description: "A token for Verto beta testers",
+      name: "Test",
+      ticker: "TST",
+      description: "Test NFT contract",
+      title: "Some title",
       owner: wallet1.address,
+      allowMinting: false,
       balances: {
         [wallet1.address]: 1
       },
-      invites: {
-        [wallet1.address]: 1
-      }
+      contentType: "image/png",
+      createdAt: Math.floor(Date.now() / 1000).toString()
     };
 
     CONTRACT_ID = await createContract(
@@ -74,6 +70,15 @@ describe("Test the invite contract", () => {
       wallet1.jwk,
       contractSrc,
       JSON.stringify(initialState)
+    );
+    CONTRACT2_ID = await createContract(
+      arweave,
+      wallet1.jwk,
+      contractSrc,
+      JSON.stringify({
+        ...initialState,
+        allowMinting: true
+      })
     );
 
     await mine();
@@ -92,57 +97,42 @@ describe("Test the invite contract", () => {
     expect(balance?.balance).toEqual(1);
   });
 
-  it("should allow inviting if the user has invites left", async () => {
+  it("should not allow minting new tokens", async () => {
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
-      function: "invite",
+      function: "mint",
       target: wallet2.address
     });
     await mine();
 
     const contractState = await state();
 
-    expect(contractState.balances[wallet2.address]).toEqual(1);
-    expect(contractState.invites[wallet2.address]).toEqual(3);
-    expect(contractState.invites[wallet1.address]).toEqual(0);
+    expect(contractState.balances[wallet2.address]).toEqual(undefined);
   });
 
-  it("should not allow inviting if the user is out of invites", async () => {
-    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
-      function: "invite",
-      target: wallet3.address
-    });
-    await mine();
-
-    const contractState = await state();
-
-    expect(contractState.invites[wallet1.address]).toEqual(0);
-    expect(contractState.balances[wallet3.address]).toEqual(undefined);
-  });
-
+  // allow minting with the 2nd contract, which has minting set to true
   it("should allow minting new tokens", async () => {
-    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+    await interactWrite(arweave, wallet1.jwk, CONTRACT2_ID, {
       function: "mint",
-      target: wallet3.address
+      target: wallet2.address
     });
     await mine();
 
-    const contractState = await state();
+    const contractState = await readContract(arweave, CONTRACT2_ID);
 
-    expect(contractState.balances[wallet3.address]).toEqual(1);
-    expect(contractState.invites[wallet3.address]).toEqual(3);
+    expect(contractState.balances[wallet2.address]).toEqual(1);
   });
 
   it("should allow transferring", async () => {
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "transfer",
-      target: wallet3.address,
+      target: wallet2.address,
       qty: 1
     });
     await mine();
 
     const contractState = await state();
 
-    expect(contractState.balances[wallet3.address]).toEqual(2);
+    expect(contractState.balances[wallet2.address]).toEqual(1);
     expect(contractState.balances[wallet1.address]).toEqual(0);
   });
 });
