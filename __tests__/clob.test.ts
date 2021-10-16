@@ -209,17 +209,6 @@ describe("Test the clob contract", () => {
     expect(contractState.communityContract).toEqual(localCommunityContract);
   });
 
-  it("should toggle pair gatekeeper", async () => {
-    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
-      function: "togglePairGatekeeper"
-    });
-    await mine();
-
-    const contractState = await state();
-
-    expect(contractState.pairGatekeeper).toEqual(true);
-  });
-
   it("should add a new pair", async () => {
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "addPair",
@@ -294,6 +283,17 @@ describe("Test the clob contract", () => {
 
   // TODO: check the canceller balance (expect it to be the initial one again)
   // to see if the canceling was succesful
+
+  it("should toggle pair gatekeeper", async () => {
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+      function: "togglePairGatekeeper"
+    });
+    await mine();
+
+    const contractState = await state();
+
+    expect(contractState.pairGatekeeper).toEqual(true);
+  });
 });
 
 async function mine() {
