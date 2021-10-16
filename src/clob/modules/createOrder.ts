@@ -84,6 +84,7 @@ export const CreateOrder = async (
     contractInput.qty,
     caller,
     SmartWeave.transaction.id,
+    tokenTx,
     sortedOrderbook,
     price
   );
@@ -104,6 +105,7 @@ function matchOrder(
   inputQuantity: number,
   inputCreator: string,
   inputTransaction: string,
+  inputTransfer: string,
   orderbook: OrderInterface[],
   inputPrice?: number,
   foreignCalls?: ForeignCallInterface[]
@@ -208,6 +210,7 @@ function matchOrder(
         // Remove existing order & subtract input order amount from existing
         orderbook.push({
           transaction: inputTransaction,
+          transfer: inputTransfer,
           creator: inputCreator,
           token: inputToken,
           price: convertedExistingPrice,
@@ -223,6 +226,7 @@ function matchOrder(
           inputQuantity,
           inputCreator,
           inputTransaction,
+          inputTransfer,
           orderbook,
           convertedExistingPrice,
           foreignCalls

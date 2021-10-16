@@ -63,6 +63,7 @@ export interface ReadOutboxInterface {
 
 export interface OrderInterface {
   transaction: string;
+  transfer: string; // ID of the token transfer
   creator: string;
   token: string;
   price: number;
