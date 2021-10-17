@@ -56,6 +56,18 @@ export const AddPair = async (
           `Invalid balance for "${addr}" in contract "${id}"`
         );
       }
+      // Check if the token is tradeable
+      // The owner of the contract can define this
+      // at "state.settings", with the setting name
+      // isTradeable
+      const tradeableSetting = tokenState?.settings?.find(
+        ([settingName]) => settingName === "isTradeable"
+      )?.[1];
+
+      ContractAssert(
+        !!tradeableSetting,
+        `This token does not allow trading (${id})`
+      );
     } catch (e) {
       throw new ContractError(e);
     }
