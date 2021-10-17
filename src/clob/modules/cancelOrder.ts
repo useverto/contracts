@@ -3,7 +3,7 @@ import {
   StateInterface,
   CancelOrderInterface
 } from "../faces";
-import { getContractID, isAddress } from "../utils";
+import { isAddress } from "../utils";
 
 export const CancelOrder = async (
   state: StateInterface,
