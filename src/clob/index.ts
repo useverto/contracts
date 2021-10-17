@@ -29,7 +29,7 @@ export async function handle(state: StateInterface, action: ActionInterface) {
       return { state: await ReadOutbox(state, action) };
 
     case "invoke":
-      return { state: Invoke(state, action) };
+      return { state: await Invoke(state, action) };
 
     case "togglePairGatekeeper":
       return { state: TogglePairGatekeeper(state, action) };
