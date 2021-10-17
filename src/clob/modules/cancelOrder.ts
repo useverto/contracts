@@ -3,7 +3,7 @@ import {
   StateInterface,
   CancelOrderInterface
 } from "../faces";
-import { ensureValidInteraction, isAddress } from "../utils";
+import { getContractID, isAddress } from "../utils";
 
 export const CancelOrder = async (
   state: StateInterface,
@@ -17,17 +17,14 @@ export const CancelOrder = async (
   // Verify order ID
   ContractAssert(isAddress(orderTxID), "Invalid order ID");
 
-  // Ensure that the interaction with the contract was valid
-  await ensureValidInteraction(
-    SmartWeave.transaction.tags["Contract"] as string,
-    orderTxID
-  );
-
   // Remap all orders into one array
   const allOrders = state.pairs.map((pair) => pair.orders).flat(1);
 
   // Get the order to cancel
   const order = allOrders.find(({ transaction }) => transaction === orderTxID);
+
+  // Ensure that the order exists
+  ContractAssert(order !== undefined, "Order does not exist");
 
   // Ensure that the creator of the order is the caller
   ContractAssert(
