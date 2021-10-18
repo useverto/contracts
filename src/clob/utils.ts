@@ -84,4 +84,4 @@ export const isAddress = (addr: string) => /[a-z0-9_-]{43}/i.test(addr);
  */
 export const getContractID = (): string =>
   // @ts-ignore
-  SmartWeave.transaction.tags.find(({ name }) => name === "Contract").value;
+  SmartWeave.transaction.tags["Contract"];

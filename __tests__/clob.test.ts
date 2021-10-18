@@ -42,6 +42,7 @@ describe("Test the clob contract", () => {
   let localTokenPair = [];
 
   async function state(): Promise<StateInterface> {
+    await mine();
     return await readContract(arweave, CONTRACT_ID);
   }
 
@@ -245,7 +246,7 @@ describe("Test the clob contract", () => {
     });
     await mine();
 
-    const contractState = await state();
+    const contractState = await readContract(arweave, CONTRACT_ID);
     const onContractPair = contractState.pairs.find(
       ({ pair }) =>
         pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]

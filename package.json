@@ -2,7 +2,7 @@
   "scripts": {
     "build": "node ./build.js",
     "fmt": "prettier --write .",
-    "test": "jest ./dist/tests",
+    "test": "node ./build.js && jest ./dist/tests",
     "fmt:check": "prettier --check ."
   },
   "gitHooks": {

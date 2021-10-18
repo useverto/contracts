@@ -65,7 +65,7 @@ export const AddPair = async (
       )?.[1];
 
       ContractAssert(
-        !!tradeableSetting,
+        tradeableSetting === true || tradeableSetting === undefined,
         `This token does not allow trading (${id})`
       );
     } catch (e) {

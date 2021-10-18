@@ -18,7 +18,7 @@ export const CreateOrder = async (
   const usedPair = input.pair;
   const tokenTx = input.transaction;
   const price = input.price;
-  let pairIndex;
+  let pairIndex: number;
 
   // Test that pairs are valid contract strings
   ContractAssert(
@@ -33,7 +33,7 @@ export const CreateOrder = async (
       currentPair.includes(usedPair[0]) &&
       currentPair.includes(usedPair[1])
     ) {
-      pairIndex = pairs[i];
+      pairIndex = i;
     }
   }
   ContractAssert(pairIndex !== undefined, "This pair does not exist yet");
@@ -54,7 +54,9 @@ export const CreateOrder = async (
       contractID = tag.get("value", { decode: true, string: true });
     }
     if (tag.get("name", { decode: true, string: true }) === "Input") {
-      contractInput = tag.get("value", { decode: true, string: true });
+      contractInput = JSON.parse(
+        tag.get("value", { decode: true, string: true })
+      );
     }
   });
 
@@ -75,8 +77,6 @@ export const CreateOrder = async (
   let sortedOrderbook = state.pairs[pairIndex].orders.sort((a, b) =>
     a.price > b.price ? 1 : -1
   );
-
-  JSON.parse(contractInput);
 
   // Invoke the recursive matching function
   const { orderbook, foreignCalls } = matchOrder(
@@ -111,6 +111,22 @@ function matchOrder(
   foreignCalls?: ForeignCallInterface[]
 ) {
   let fillAmount;
+  // if there are no orders, push it
+  if (orderbook.length === 0)
+    return {
+      orderbook: [
+        {
+          transaction: inputTransaction,
+          transfer: inputTransfer,
+          creator: inputCreator,
+          token: inputToken,
+          price: inputPrice,
+          quantity: inputQuantity,
+          originalQuantity: inputQuantity
+        }
+      ],
+      foreignCalls: []
+    };
   for (let i = 0; i < orderbook.length; i++) {
     const convertedExistingPrice = 1 / orderbook[i].price;
     if (inputPrice) {
@@ -148,7 +164,7 @@ function matchOrder(
           }
         );
         // Remove existing order
-        orderbook.splice(i, 1);
+        orderbook = orderbook.splice(i, 1);
 
         return {
           orderbook,
@@ -218,7 +234,7 @@ function matchOrder(
             inputQuantity - orderbook[i].quantity * convertedExistingPrice, // Input price in units of inputToken/existingToken
           originalQuantity: inputQuantity
         });
-        orderbook.splice(i, 1);
+        orderbook = orderbook.splice(i, 1);
 
         // Call matchOrder() recursively
         matchOrder(
