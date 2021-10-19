@@ -112,9 +112,10 @@ function matchOrder(
 ) {
   let fillAmount;
   // if there are no orders, push it
-  if (orderbook.length === 0)
+  if (orderbook.filter((order) => inputToken !== order.token).length === 0)
     return {
       orderbook: [
+        ...orderbook,
         {
           transaction: inputTransaction,
           transfer: inputTransfer,
@@ -125,11 +126,17 @@ function matchOrder(
           originalQuantity: inputQuantity
         }
       ],
-      foreignCalls: []
+      foreignCalls: foreignCalls === undefined ? [] : foreignCalls
     };
+
   for (let i = 0; i < orderbook.length; i++) {
+    // continue if the sent token is the same
+    if (inputToken === orderbook[i].token) continue;
+
     const convertedExistingPrice = 1 / orderbook[i].price;
+
     if (inputPrice) {
+      console.log("1) LIMIT ORDER");
       // Limit Order
       ContractAssert(
         typeof inputPrice === "number",
@@ -137,13 +144,17 @@ function matchOrder(
       );
       fillAmount = inputQuantity * inputPrice;
     } else {
+      console.log("2) MARKET ORDER");
       // Market order
       fillAmount = inputQuantity * convertedExistingPrice; // Existing price in units of existingToken/inputToken
     }
+
     if (inputPrice === convertedExistingPrice || !inputPrice) {
+      console.log("3) Found compatible order");
       if (fillAmount === orderbook[i].quantity) {
         // ~~ Matched orders completely filled ~~
         // Send tokens from new order to existing order creator
+        console.log("4) ~~ Matched orders completely filled ~~");
         foreignCalls.push(
           {
             contract: inputToken,
@@ -173,6 +184,9 @@ function matchOrder(
       } else if (fillAmount < orderbook[i].quantity) {
         // ~~ Input order filled; existing order not completely filled ~~
         // Send existing order creator tokens from new order
+        console.log(
+          "5) ~~ Input order filled; existing order not completely filled ~~"
+        );
         foreignCalls.push(
           {
             contract: inputToken,
@@ -202,6 +216,9 @@ function matchOrder(
       } else if (fillAmount > orderbook[i].quantity) {
         // ~~ Input order not completely filled; existing order filled ~~
         // Send existing order creator tokens from new order
+        console.log(
+          "6) ~~ Input order not completely filled; existing order filled ~~"
+        );
         foreignCalls.push(
           {
             contract: inputToken,
@@ -237,6 +254,7 @@ function matchOrder(
         orderbook = orderbook.splice(i, 1);
 
         // Call matchOrder() recursively
+        console.log("7) Calling recursively");
         matchOrder(
           inputToken,
           inputQuantity,

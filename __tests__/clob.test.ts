@@ -22,7 +22,7 @@ const EXAMPLE_TOKEN_PAIR = [
   "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
   "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ"
 ];
-const initialPSTBalance = 100000;
+const initialPSTBalance = 1000000;
 
 jest.setTimeout(120000);
 
@@ -257,22 +257,27 @@ describe("Test the clob contract", () => {
     expect(onContractPair).not.toEqual(undefined);
   });
 
-  it("should create new order", async () => {
-    const orderID = await createOrder(
+  it("should create new order and match it", async () => {
+    const orderSendID = await createOrder(
       { qty: 1000, token: localTokenPair[0], price: 10 },
       wallet1.jwk
     );
+    const orderReceive = await createOrder({ qty: 150000 });
 
+    // 3 Order cases to account for
+    // 1) Two orders match cleanly (same price & same amount)
+    // 2) Existing order is greater than new order (new order matches instantly with partially matched existing)
+    // 3) New order is greater than existing (new order partially matches and is left in orderbook while existing matches completely)
     const contractState = await readContract(arweave, CONTRACT_ID);
     const onContractPair = contractState.pairs.find(
       ({ pair }) =>
         pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]
     );
-    const order = onContractPair?.orders.find(
-      ({ transaction: tx }) => tx === orderID
+    const orderReceive = onContractPair?.orders.find(
+      ({ transaction: tx }) => tx === orderReceiveID
     );
 
-    expect(order).not.toEqual(undefined);
+    expect(orderReceive).not.toEqual(undefined);
   });
 
   // TODO: test order matching and recieving for the other wallet (wallet2)
