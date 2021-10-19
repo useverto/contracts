@@ -30,7 +30,10 @@ export const ensureValidTransfer = async (
 
         // make sure that the target of the transfer transaction is THIS (the clob) contract
         ContractAssert(
-          input.target === getContractID(),
+          input.target ===
+            // @ts-expect-error
+            SmartWeave.transaction.tags.find(({ name }) => name === "Contract")
+              .value,
           "The target of this transfer is not this contract"
         );
       }
@@ -76,12 +79,3 @@ export const ensureValidInteraction = async (
  * @returns Valid address or not
  */
 export const isAddress = (addr: string) => /[a-z0-9_-]{43}/i.test(addr);
-
-/**
- * Get the ID of this contract
- *
- * @returns Contract ID
- */
-export const getContractID = (): string =>
-  // @ts-ignore
-  SmartWeave.transaction.tags["Contract"];

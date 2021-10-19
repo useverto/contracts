@@ -22,6 +22,7 @@ const EXAMPLE_TOKEN_PAIR = [
   "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
   "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ"
 ];
+const initialPSTBalance = 100000;
 
 jest.setTimeout(120000);
 
@@ -37,13 +38,42 @@ describe("Test the clob contract", () => {
 
   let CONTRACT_ID: string;
   let localCommunityContract: string;
-  let orderID: string;
 
   let localTokenPair = [];
 
   async function state(): Promise<StateInterface> {
     await mine();
     return await readContract(arweave, CONTRACT_ID);
+  }
+
+  async function createOrder(
+    {
+      qty,
+      token,
+      price
+    }: {
+      qty: number;
+      token: string;
+      price?: number;
+    },
+    wallet: JWKInterface
+  ) {
+    const transaction = await interactWrite(arweave, wallet1.jwk, token, {
+      function: "transfer",
+      qty,
+      target: CONTRACT_ID
+    });
+    await mine();
+
+    const orderID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+      function: "createOrder",
+      transaction,
+      pair: localTokenPair,
+      price
+    });
+    await mine();
+
+    return orderID;
   }
 
   beforeAll(async () => {
@@ -55,7 +85,8 @@ describe("Test the clob contract", () => {
     arweave = new Arweave({
       host: "localhost",
       port,
-      protocol: "http"
+      protocol: "http",
+      logging: true
     });
 
     // generate test wallets
@@ -96,8 +127,8 @@ describe("Test the clob contract", () => {
       localTokenPair.push(
         await arlocalUtils.copyContract(pstID, false, (state) => {
           // add some balance to the test wallets
-          state.balances[wallet1.address] = 10000;
-          state.balances[wallet2.address] = 10000;
+          state.balances[wallet1.address] = initialPSTBalance;
+          state.balances[wallet2.address] = initialPSTBalance;
 
           return state;
         })
@@ -227,24 +258,10 @@ describe("Test the clob contract", () => {
   });
 
   it("should create new order", async () => {
-    const transaction = await interactWrite(
-      arweave,
-      wallet1.jwk,
-      localTokenPair[0],
-      {
-        function: "transfer",
-        qty: 1000,
-        target: CONTRACT_ID
-      }
+    const orderID = await createOrder(
+      { qty: 1000, token: localTokenPair[0], price: 10 },
+      wallet1.jwk
     );
-    await mine();
-    orderID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
-      function: "createOrder",
-      transaction,
-      pair: localTokenPair,
-      price: 10
-    });
-    await mine();
 
     const contractState = await readContract(arweave, CONTRACT_ID);
     const onContractPair = contractState.pairs.find(
@@ -264,6 +281,11 @@ describe("Test the clob contract", () => {
   // to see if the sell indeed happened
 
   it("should cancel order", async () => {
+    const orderID = await createOrder(
+      { qty: 1000, token: localTokenPair[0], price: 10 },
+      wallet1.jwk
+    );
+
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "cancelOrder",
       transaction: orderID
