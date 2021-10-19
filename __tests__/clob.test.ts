@@ -76,6 +76,25 @@ describe("Test the clob contract", () => {
     return orderID;
   }
 
+  async function balance(addr: string, token: string): Promise<number> {
+    const tokenState = await readContract(arweave, token);
+
+    return tokenState.balances[addr] ?? 0;
+  }
+
+  async function findOrder(orderID: string) {
+    const contractState = await state();
+    const onContractPair = contractState.pairs.find(
+      ({ pair }) =>
+        pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]
+    );
+    const order = onContractPair?.orders.find(
+      ({ transaction: tx }) => tx === orderID
+    );
+
+    return order;
+  }
+
   beforeAll(async () => {
     // init arlocal
     arlocal = new ArLocal(port, false);
@@ -257,33 +276,107 @@ describe("Test the clob contract", () => {
     expect(onContractPair).not.toEqual(undefined);
   });
 
-  it("should create new order and match it", async () => {
+  // two orders match cleanly (same price & same amount)
+  it("should match two orders cleanly", async () => {
+    const qtyToTrade = 1000;
+    const balances = {
+      [wallet1.address]: await balance(wallet1.address, localTokenPair[1]),
+      [wallet2.address]: await balance(wallet2.address, localTokenPair[0])
+    };
+
+    // create first order
     const orderSendID = await createOrder(
-      { qty: 1000, token: localTokenPair[0], price: 10 },
+      { qty: qtyToTrade, token: localTokenPair[0], price: 10 },
       wallet1.jwk
     );
-    const orderReceive = await createOrder({ qty: 150000 });
 
-    // 3 Order cases to account for
-    // 1) Two orders match cleanly (same price & same amount)
-    // 2) Existing order is greater than new order (new order matches instantly with partially matched existing)
-    // 3) New order is greater than existing (new order partially matches and is left in orderbook while existing matches completely)
-    const contractState = await readContract(arweave, CONTRACT_ID);
-    const onContractPair = contractState.pairs.find(
-      ({ pair }) =>
-        pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]
-    );
-    const orderReceive = onContractPair?.orders.find(
-      ({ transaction: tx }) => tx === orderReceiveID
+    expect(await findOrder(orderSendID)).not.toEqual(undefined);
+
+    // create second order
+    const orderReceiveID = await createOrder(
+      { qty: qtyToTrade, token: localTokenPair[1], price: 10 },
+      wallet2.jwk
     );
 
-    expect(orderReceive).not.toEqual(undefined);
+    expect(await findOrder(orderReceiveID)).toEqual(undefined);
+    expect(await findOrder(orderSendID)).toEqual(undefined);
+    expect(await balance(wallet1.address, localTokenPair[1])).toEqual(
+      balances[wallet1.address] + qtyToTrade
+    );
+    expect(await balance(wallet2.address, localTokenPair[0])).toEqual(
+      balances[wallet2.address] + qtyToTrade
+    );
   });
 
-  // TODO: test order matching and recieving for the other wallet (wallet2)
+  // existing order is greater than new order (new order matches instantly with partially matched existing)
+  it("should match a greater order with the new lesser order", async () => {
+    const lesserQty = 500;
+    const balances = {
+      [wallet1.address]: await balance(wallet1.address, localTokenPair[1]),
+      [wallet2.address]: await balance(wallet2.address, localTokenPair[0])
+    };
 
-  // TODO: check seller balance (expect it to be bal - 1000 qty)
-  // to see if the sell indeed happened
+    // create first order
+    const orderSendID = await createOrder(
+      { qty: lesserQty * 2, token: localTokenPair[0], price: 10 },
+      wallet1.jwk
+    );
+
+    expect(await findOrder(orderSendID)).not.toEqual(undefined);
+
+    // create second order
+    const orderReceiveID = await createOrder(
+      { qty: lesserQty, token: localTokenPair[1], price: 10 },
+      wallet2.jwk
+    );
+
+    const sendOrder = await findOrder(orderSendID);
+
+    expect(sendOrder).not.toEqual(undefined);
+    expect(sendOrder.quantity).toEqual(lesserQty);
+    expect(await findOrder(orderReceiveID)).toEqual(undefined);
+    expect(await balance(wallet1.address, localTokenPair[1])).toEqual(
+      balances[wallet1.address] + lesserQty
+    );
+    expect(await balance(wallet2.address, localTokenPair[0])).toEqual(
+      balances[wallet2.address] + lesserQty
+    );
+  });
+
+  // new order is greater than existing (new order partially matches and is left in orderbook while existing matches completely)
+  it("should match a lesser order with the new greater order", async () => {
+    const lesserQty = 500;
+    const balances = {
+      [wallet1.address]: await balance(wallet1.address, localTokenPair[1]),
+      [wallet2.address]: await balance(wallet2.address, localTokenPair[0])
+    };
+
+    // create first order
+    const orderSendID = await createOrder(
+      { qty: lesserQty, token: localTokenPair[0], price: 10 },
+      wallet1.jwk
+    );
+
+    expect(await findOrder(orderSendID)).not.toEqual(undefined);
+
+    // create second order
+    const orderReceiveID = await createOrder(
+      { qty: lesserQty * 2, token: localTokenPair[1], price: 10 },
+      wallet2.jwk
+    );
+
+    const receiveOrder = await findOrder(orderReceiveID);
+
+    expect(receiveOrder).not.toEqual(undefined);
+    expect(receiveOrder.quantity).toEqual(lesserQty);
+    expect(await findOrder(orderSendID)).toEqual(undefined);
+    expect(await balance(wallet1.address, localTokenPair[1])).toEqual(
+      balances[wallet1.address] + lesserQty
+    );
+    expect(await balance(wallet2.address, localTokenPair[0])).toEqual(
+      balances[wallet2.address] + lesserQty
+    );
+  });
 
   it("should cancel order", async () => {
     const orderID = await createOrder(
