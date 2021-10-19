@@ -379,9 +379,15 @@ describe("Test the clob contract", () => {
   });
 
   it("should cancel order", async () => {
+    const initialBalance = await balance(wallet1.address, localTokenPair[0]);
+    const qty = 1000;
     const orderID = await createOrder(
-      { qty: 1000, token: localTokenPair[0], price: 10 },
+      { qty, token: localTokenPair[0], price: 10 },
       wallet1.jwk
+    );
+
+    expect(await balance(wallet1.address, localTokenPair[0])).toEqual(
+      initialBalance - qty
     );
 
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
@@ -390,16 +396,10 @@ describe("Test the clob contract", () => {
     });
     await mine();
 
-    const contractState = await state();
-    const onContractPair = contractState.pairs.find(
-      ({ pair }) =>
-        pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]
+    expect(await findOrder(orderID)).toEqual(undefined);
+    expect(await balance(wallet1.address, localTokenPair[0])).toEqual(
+      initialBalance
     );
-    const order = onContractPair?.orders.find(
-      ({ transaction: tx }) => tx === orderID
-    );
-
-    expect(order).toEqual(undefined);
   });
 
   // TODO: check the canceller balance (expect it to be the initial one again)
