@@ -1,3 +1,4 @@
+import { Tag } from "arweave/node/lib/transaction";
 import { ActionInterface, ListInterface, StateInterface } from "../faces";
 
 export const List = async (state: StateInterface, action: ActionInterface) => {
@@ -23,7 +24,7 @@ export const List = async (state: StateInterface, action: ActionInterface) => {
 
   // check if the contract exists
   try {
-    const contractState = await SmartWeave.contracts.readContractState(id);
+    const contractState = await getInitialState(id);
 
     ContractAssert(!!contractState, "Contract state is null.");
 
@@ -58,3 +59,28 @@ export const List = async (state: StateInterface, action: ActionInterface) => {
   });
   return { ...state, tokens };
 };
+
+async function getInitialState(contractID: string) {
+  const contractTX = await SmartWeave.unsafeClient.transactions.get(contractID);
+
+  if (getTagValue("Init-State", contractTX.tags))
+    return JSON.parse(getTagValue("Init-State", contractTX.tags));
+
+  if (getTagValue("Init-State-TX", contractTX.tags))
+    return JSON.parse(
+      (await SmartWeave.unsafeClient.transactions.getData(
+        getTagValue("Init-State-TX", contractTX.tags),
+        { decode: true, string: true }
+      )) as string
+    );
+
+  return JSON.parse(
+    (await SmartWeave.unsafeClient.transactions.getData(contractID, {
+      decode: true,
+      string: true
+    })) as string
+  );
+}
+
+const getTagValue = (name: string, tags: Tag[]) =>
+  tags.find((tag) => tag.name === name)?.value;
