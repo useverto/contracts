@@ -1,6 +1,6 @@
 import { ActionInterface, ListInterface, StateInterface } from "../faces";
 
-export const List = (state: StateInterface, action: ActionInterface) => {
+export const List = async (state: StateInterface, action: ActionInterface) => {
   const people = state.people;
   const tokens = state.tokens;
   const caller = action.caller;
@@ -20,6 +20,28 @@ export const List = (state: StateInterface, action: ActionInterface) => {
       type === "custom",
     "Caller did not supply a valid token type."
   );
+
+  // check if the contract exists
+  try {
+    const contractState = await SmartWeave.contracts.readContractState(id);
+
+    ContractAssert(!!contractState, "Contract state is null.");
+
+    // if it is a token, ensure that it is valid
+    if (type === "art" || type === "community") {
+      ContractAssert(
+        !!contractState.balances,
+        "Contract does not have a balances object."
+      );
+      ContractAssert(
+        contractState.name && contractState.ticker,
+        "Contract does not have a name or a ticker."
+      );
+    }
+  } catch (e) {
+    console.log(e);
+    throw new ContractError("Contract does not exist.");
+  }
 
   const identity = people.find((user) =>
     user.addresses.find((address) => address === caller)

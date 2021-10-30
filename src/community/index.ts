@@ -11,7 +11,7 @@ export async function handle(state: StateInterface, action: ActionInterface) {
 
     // Tokens
     case "list":
-      return { state: List(state, action) };
+      return { state: await List(state, action) };
     case "unlist":
       return { state: Unlist(state, action) };
   }

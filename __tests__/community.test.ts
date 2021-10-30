@@ -4,6 +4,7 @@ import { createContract, interactWrite, readContract } from "smartweave";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import ArLocal from "arlocal";
+import ArLocalUtils from "arlocal-utils";
 import Arweave from "arweave";
 
 let arweave: Arweave;
@@ -11,10 +12,12 @@ let arlocal: ArLocal;
 
 const port = 1988;
 const test_username = "test_username";
-const test_token_id = "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A";
+
+jest.setTimeout(120000);
 
 describe("Test the community contract", () => {
   let CONTRACT_ID: string;
+  let test_token_id: string;
   let wallet: {
     address: string;
     jwk: JWKInterface;
@@ -51,6 +54,12 @@ describe("Test the community contract", () => {
       wallet.jwk,
       contractSrc,
       JSON.stringify(initialState)
+    );
+
+    const arlocalUtils = new ArLocalUtils(arweave, wallet.jwk);
+
+    test_token_id = await arlocalUtils.copyContract(
+      "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
     );
 
     await mine();
