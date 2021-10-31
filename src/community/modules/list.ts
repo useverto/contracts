@@ -40,7 +40,6 @@ export const List = async (state: StateInterface, action: ActionInterface) => {
       );
     }
   } catch (e) {
-    console.log(e);
     throw new ContractError("Contract does not exist.");
   }
 
