@@ -1,4 +1,9 @@
-import { ActionInterface, StateInterface, ReadOutboxInterface } from "../faces";
+import {
+  ActionInterface,
+  StateInterface,
+  ReadOutboxInterface,
+  ForeignCallInterface
+} from "../faces";
 import { handle } from "../index";
 
 export const ReadOutbox = async (
@@ -21,6 +26,24 @@ export const ReadOutbox = async (
     !!foreignState.foreignCalls,
     "Contract is missing support for foreign calls"
   );
+
+  // Get foreign calls for this contract
+  const calls = foreignState.foreignCalls.filter(
+    (element: ForeignCallInterface) =>
+      element.contract === SmartWeave.contract.id &&
+      state.invocations.includes(element.txID)
+  );
+
+  // https://www.notion.so/verto/Foreign-Call-Protocol-Specification-61e221e5118a40b980fcaade35a2a718#234abe5aa984441c83fbeb304147e885
+  // Run all invocations
+  let res = state;
+  for (const entry of calls) {
+    // TODO: why do we need this? @t8
+    res = (await handle(res, { caller: input.contract, input: entry.input }))
+      .state;
+  }
+
+  // Check if the invocation's target is this contract
   ContractAssert(
     foreignState.foreignCalls[parseInt(input.id)].contract ===
       SmartWeave.contract.id,
@@ -44,7 +67,7 @@ export const ReadOutbox = async (
   };
 
   // Evaluate the state
-  const resultState = await handle(state, foreignAction);
+  const { state: resultState } = await handle(state, foreignAction);
 
   // Push the invoked call
   invocations.push(foreignCall);
