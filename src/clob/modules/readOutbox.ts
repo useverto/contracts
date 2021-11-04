@@ -39,6 +39,10 @@ export const ReadOutbox = async (
   let res = state;
   for (const entry of calls) {
     // TODO: why do we need this? @t8
+    // these are not in the example FCP contracts,
+    // only in the sepcification
+    // ABC: https://viewblock.io/arweave/address/vA7-Mly2AfrUoOrysY-mHaeF8auY7dga-PGYmu_uD-I?tab=code
+    // DEF: https://viewblock.io/arweave/address/19ba3gesoDBFzpwthqxt-ZVZpen-28OQizZAzo9HwOY?tab=code
     res = (await handle(res, { caller: input.contract, input: entry.input }))
       .state;
   }
