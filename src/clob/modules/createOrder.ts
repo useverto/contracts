@@ -157,6 +157,7 @@ function matchOrder(
         console.log("4) ~~ Matched orders completely filled ~~");
         foreignCalls.push(
           {
+            txID: SmartWeave.transaction.id, // TODO: please check this @tate, is this the txid that we need here?
             contract: inputToken,
             input: {
               function: "transfer",
@@ -166,6 +167,7 @@ function matchOrder(
           },
           // Send tokens from existing order to new order creator
           {
+            txID: SmartWeave.transaction.id, // TODO: please check this @tate, is this the txid that we need here?
             contract: orderbook[i].token,
             input: {
               function: "transfer",
@@ -189,6 +191,7 @@ function matchOrder(
         );
         foreignCalls.push(
           {
+            txID: SmartWeave.transaction.id, // TODO: please check this @tate, is this the txid that we need here?
             contract: inputToken,
             input: {
               function: "transfer",
@@ -198,6 +201,7 @@ function matchOrder(
           },
           // Send new order creator tokens from existing order
           {
+            txID: SmartWeave.transaction.id, // TODO: please check this @tate, is this the txid that we need here?
             contract: orderbook[i].token,
             input: {
               function: "transfer",
@@ -221,6 +225,7 @@ function matchOrder(
         );
         foreignCalls.push(
           {
+            txID: SmartWeave.transaction.id, // TODO: please check this @tate, is this the txid that we need here?
             contract: inputToken,
             input: {
               function: "transfer",
@@ -231,6 +236,7 @@ function matchOrder(
           },
           // Send new order creator tokens from existing order
           {
+            txID: SmartWeave.transaction.id, // TODO: please check this @tate, is this the txid that we need here?
             contract: orderbook[i].token,
             input: {
               function: "transfer",

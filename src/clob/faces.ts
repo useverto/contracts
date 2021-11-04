@@ -72,6 +72,7 @@ export interface OrderInterface {
 }
 
 export interface ForeignCallInterface {
+  txID: string;
   contract: string;
   input: object;
 }
