@@ -58,14 +58,14 @@ describe("Test the clob contract", () => {
     },
     wallet: JWKInterface
   ) {
-    const transaction = await interactWrite(arweave, wallet1.jwk, token, {
+    const transaction = await interactWrite(arweave, wallet.jwk, token, {
       function: "transfer",
       qty,
       target: CONTRACT_ID
     });
     await mine();
 
-    const orderID = await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+    const orderID = await interactWrite(arweave, wallet.jwk, CONTRACT_ID, {
       function: "createOrder",
       transaction,
       pair: localTokenPair,
@@ -294,7 +294,7 @@ describe("Test the clob contract", () => {
 
     // create second order
     const orderReceiveID = await createOrder(
-      { qty: qtyToTrade, token: localTokenPair[1], price: 10 },
+      { qty: qtyToTrade, token: localTokenPair[1] },
       wallet2.jwk
     );
 

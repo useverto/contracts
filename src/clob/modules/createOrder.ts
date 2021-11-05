@@ -112,6 +112,7 @@ function matchOrder(
 ) {
   let fillAmount;
   // if there are no orders, push it
+  console.log(orderbook.filter((order) => inputToken !== order.token));
   if (orderbook.filter((order) => inputToken !== order.token).length === 0)
     return {
       orderbook: [
@@ -272,6 +273,28 @@ function matchOrder(
           foreignCalls
         );
       }
+    } else {
+      // ~~ No compatible orders found for the given price ~~
+      // Push the order to the orderbook for future matching
+      // TODO: @t8 check this, was this really missing or did
+      // I add it, but it was not needed??
+      console.log("8) Pushing the order");
+
+      return {
+        orderbook: [
+          ...orderbook,
+          {
+            transaction: inputTransaction,
+            transfer: inputTransfer,
+            creator: inputCreator,
+            token: inputToken,
+            price: inputPrice,
+            quantity: inputQuantity,
+            originalQuantity: inputQuantity
+          }
+        ],
+        foreignCalls: foreignCalls === undefined ? [] : foreignCalls
+      };
     }
   }
 }
