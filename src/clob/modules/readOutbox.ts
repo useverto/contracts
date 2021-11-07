@@ -11,7 +11,6 @@ export const ReadOutbox = async (
   action: ActionInterface
 ): Promise<StateInterface> => {
   const input: ReadOutboxInterface = action.input;
-  const invocations = state.invocations;
 
   // Ensure that a contract ID is passed
   ContractAssert(!!input.contract, "Missing contract to invoke");
@@ -42,7 +41,7 @@ export const ReadOutbox = async (
     res = (await handle(res, { caller: input.contract, input: entry.input }))
       .state;
     // Push invocation to executed invocations
-    state.invocations.push(entry.txID);
+    res.invocations.push(entry.txID);
   }
 
   return res;
