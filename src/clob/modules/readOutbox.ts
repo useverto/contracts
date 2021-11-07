@@ -27,54 +27,23 @@ export const ReadOutbox = async (
     "Contract is missing support for foreign calls"
   );
 
-  // Get foreign calls for this contract
-  const calls = foreignState.foreignCalls.filter(
+  // Get foreign calls for this contract that have not been executed
+  const calls: ForeignCallInterface[] = foreignState.foreignCalls.filter(
     (element: ForeignCallInterface) =>
       element.contract === SmartWeave.contract.id &&
-      state.invocations.includes(element.txID)
+      !state.invocations.includes(element.txID)
   );
 
-  // https://www.notion.so/verto/Foreign-Call-Protocol-Specification-61e221e5118a40b980fcaade35a2a718#234abe5aa984441c83fbeb304147e885
   // Run all invocations
   let res = state;
+
   for (const entry of calls) {
-    // TODO: why do we need this? @t8
-    // these are not in the example FCP contracts,
-    // only in the sepcification
-    // ABC: https://viewblock.io/arweave/address/vA7-Mly2AfrUoOrysY-mHaeF8auY7dga-PGYmu_uD-I?tab=code
-    // DEF: https://viewblock.io/arweave/address/19ba3gesoDBFzpwthqxt-ZVZpen-28OQizZAzo9HwOY?tab=code
+    // Run invocation
     res = (await handle(res, { caller: input.contract, input: entry.input }))
       .state;
+    // Push invocation to executed invocations
+    state.invocations.push(entry.txID);
   }
 
-  // Check if the invocation's target is this contract
-  ContractAssert(
-    foreignState.foreignCalls[parseInt(input.id)].contract ===
-      SmartWeave.contract.id,
-    "This contract is not the target contract chosen in the invocation"
-  );
-
-  const invocation = foreignState.foreignCalls[input.id].input;
-  const foreignCall = SmartWeave.transaction.id;
-
-  // Check if it has already been invoked
-  ContractAssert(
-    !invocations.includes(foreignCall),
-    "Contract invocation already exists"
-  );
-
-  // Adjust the action interface to point to this contract
-  const foreignAction = {
-    ...action,
-    caller: input.contract,
-    input: invocation
-  };
-
-  // Evaluate the state
-  const { state: resultState } = await handle(state, foreignAction);
-
-  // Push the invoked call
-  invocations.push(foreignCall);
-
-  return resultState;
+  return res;
 };
