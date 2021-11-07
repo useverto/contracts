@@ -112,7 +112,6 @@ function matchOrder(
 ) {
   let fillAmount;
   // if there are no orders, push it
-  console.log(orderbook.filter((order) => inputToken !== order.token));
   if (orderbook.filter((order) => inputToken !== order.token).length === 0)
     return {
       orderbook: [
@@ -158,7 +157,7 @@ function matchOrder(
         console.log("4) ~~ Matched orders completely filled ~~");
         foreignCalls.push(
           {
-            txID: SmartWeave.transaction.id, // TODO: please check this @tate, is this the txid that we need here?
+            txID: SmartWeave.transaction.id,
             contract: inputToken,
             input: {
               function: "transfer",
@@ -168,7 +167,7 @@ function matchOrder(
           },
           // Send tokens from existing order to new order creator
           {
-            txID: SmartWeave.transaction.id, // TODO: please check this @tate, is this the txid that we need here?
+            txID: SmartWeave.transaction.id,
             contract: orderbook[i].token,
             input: {
               function: "transfer",
@@ -192,7 +191,7 @@ function matchOrder(
         );
         foreignCalls.push(
           {
-            txID: SmartWeave.transaction.id, // TODO: please check this @tate, is this the txid that we need here?
+            txID: SmartWeave.transaction.id,
             contract: inputToken,
             input: {
               function: "transfer",
@@ -202,7 +201,7 @@ function matchOrder(
           },
           // Send new order creator tokens from existing order
           {
-            txID: SmartWeave.transaction.id, // TODO: please check this @tate, is this the txid that we need here?
+            txID: SmartWeave.transaction.id,
             contract: orderbook[i].token,
             input: {
               function: "transfer",
@@ -226,7 +225,7 @@ function matchOrder(
         );
         foreignCalls.push(
           {
-            txID: SmartWeave.transaction.id, // TODO: please check this @tate, is this the txid that we need here?
+            txID: SmartWeave.transaction.id,
             contract: inputToken,
             input: {
               function: "transfer",
@@ -237,7 +236,7 @@ function matchOrder(
           },
           // Send new order creator tokens from existing order
           {
-            txID: SmartWeave.transaction.id, // TODO: please check this @tate, is this the txid that we need here?
+            txID: SmartWeave.transaction.id,
             contract: orderbook[i].token,
             input: {
               function: "transfer",
@@ -273,11 +272,8 @@ function matchOrder(
           foreignCalls
         );
       }
-    } else {
+    } else if (inputPrice) {
       // ~~ No compatible orders found for the given price ~~
-      // Push the order to the orderbook for future matching
-      // TODO: @t8 check this, was this really missing or did
-      // I add it, but it was not needed??
       console.log("8) Pushing the order");
 
       return {
