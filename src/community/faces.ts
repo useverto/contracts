@@ -13,6 +13,7 @@ export interface StateInterface {
   tokens: {
     id: string;
     type: Token;
+    // TODO: update this to hash instead of username
     lister: string;
     // TODO: Interface for "custom" type.
   }[];

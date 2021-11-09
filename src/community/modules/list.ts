@@ -39,6 +39,15 @@ export const List = async (state: StateInterface, action: ActionInterface) => {
         "Contract does not have a name or a ticker."
       );
     }
+
+    // TODO: check for normal tokens if the minter (author of contract init tx)
+    // is the lister
+
+    // TODO: check for communities if the lister has voting power for the community
+
+    // TODO: if NFT, allow the current owner of the NFT to list it as well (to see
+    // if the token is an NFT, just check the total balance and the number of addresses
+    // in the balances object)
   } catch (e) {
     throw new ContractError("Contract does not exist.");
   }
