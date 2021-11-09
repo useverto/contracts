@@ -143,6 +143,12 @@ function matchOrder(
     // continue if the sent token is the same
     if (inputToken === orderbook[i].token) continue;
 
+    // continue if the current order in this loop equals
+    // the order that we are filling
+    // this can happen if the order was not filled 100%
+    // and matchOrder was called recursively
+    if (orderbook[i].transaction === inputTransaction) continue;
+
     const convertedExistingPrice = 1 / orderbook[i].price;
 
     if (inputPrice) {
