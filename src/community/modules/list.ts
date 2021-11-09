@@ -52,6 +52,7 @@ export const List = async (state: StateInterface, action: ActionInterface) => {
     throw new ContractError("Contract does not exist.");
   }
 
+  // TODO ANS
   const identity = people.find((user) =>
     user.addresses.find((address) => address === caller)
   );
