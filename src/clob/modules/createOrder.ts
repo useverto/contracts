@@ -108,11 +108,20 @@ function matchOrder(
   inputTransfer: string,
   orderbook: OrderInterface[],
   inputPrice?: number,
-  foreignCalls?: ForeignCallInterface[]
+  foreignCalls: ForeignCallInterface[] = []
 ) {
+  const orderPushed = !!orderbook.find(
+    (order) => order.transaction === inputTransaction
+  );
   let fillAmount;
   // if there are no orders, push it
-  if (orderbook.filter((order) => inputToken !== order.token).length === 0)
+  if (orderbook.filter((order) => inputToken !== order.token).length === 0) {
+    if (orderPushed) {
+      return {
+        orderbook,
+        foreignCalls
+      };
+    }
     return {
       orderbook: [
         ...orderbook,
@@ -126,8 +135,9 @@ function matchOrder(
           originalQuantity: inputQuantity
         }
       ],
-      foreignCalls: foreignCalls === undefined ? [] : foreignCalls
+      foreignCalls
     };
+  }
 
   for (let i = 0; i < orderbook.length; i++) {
     // continue if the sent token is the same
@@ -177,7 +187,7 @@ function matchOrder(
           }
         );
         // Remove existing order
-        orderbook = orderbook.splice(i, 1);
+        orderbook.splice(i - 1, 1);
 
         return {
           orderbook,
@@ -247,6 +257,10 @@ function matchOrder(
         );
 
         // Remove existing order & subtract input order amount from existing
+        orderbook.splice(i - 1, 1);
+
+        // TODO: if this order is already pushed (check with the pushed boolean)
+        // modify the pushed order's quantity instead of pushing it again
         orderbook.push({
           transaction: inputTransaction,
           transfer: inputTransfer,
@@ -257,7 +271,6 @@ function matchOrder(
             inputQuantity - orderbook[i].quantity * convertedExistingPrice, // Input price in units of inputToken/existingToken
           originalQuantity: inputQuantity
         });
-        orderbook = orderbook.splice(i, 1);
 
         // Call matchOrder() recursively
         console.log("7) Calling recursively");
@@ -276,6 +289,13 @@ function matchOrder(
       // ~~ No compatible orders found for the given price ~~
       console.log("8) Pushing the order");
 
+      if (orderPushed) {
+        return {
+          orderbook,
+          foreignCalls
+        };
+      }
+
       return {
         orderbook: [
           ...orderbook,
@@ -289,7 +309,7 @@ function matchOrder(
             originalQuantity: inputQuantity
           }
         ],
-        foreignCalls: foreignCalls === undefined ? [] : foreignCalls
+        foreignCalls
       };
     }
   }

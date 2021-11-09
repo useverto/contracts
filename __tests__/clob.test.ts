@@ -1,5 +1,5 @@
 import { JWKInterface } from "arweave/node/lib/wallet";
-import { StateInterface } from "../src/clob/faces";
+import { ForeignCallInterface, StateInterface } from "../src/clob/faces";
 import { StateInterface as CommunityContractStateInterface } from "../src/community/faces";
 import {
   createContract,
@@ -58,14 +58,14 @@ describe("Test the clob contract", () => {
     },
     wallet: JWKInterface
   ) {
-    const transaction = await interactWrite(arweave, wallet.jwk, token, {
+    const transaction = await interactWrite(arweave, wallet, token, {
       function: "transfer",
       qty,
       target: CONTRACT_ID
     });
     await mine();
 
-    const orderID = await interactWrite(arweave, wallet.jwk, CONTRACT_ID, {
+    const orderID = await interactWrite(arweave, wallet, CONTRACT_ID, {
       function: "createOrder",
       transaction,
       pair: localTokenPair,
@@ -279,20 +279,16 @@ describe("Test the clob contract", () => {
   // two orders match cleanly (same price & same amount)
   it("should match two orders cleanly", async () => {
     const qtyToTrade = 1000;
-    const balances = {
-      [wallet1.address]: await balance(wallet1.address, localTokenPair[1]),
-      [wallet2.address]: await balance(wallet2.address, localTokenPair[0])
-    };
 
     // create first order
     const orderSendID = await createOrder(
-      { qty: qtyToTrade, token: localTokenPair[0], price: 10 },
+      { qty: qtyToTrade, token: localTokenPair[0], price: 1 },
       wallet1.jwk
     );
 
     expect(await findOrder(orderSendID)).not.toEqual(undefined);
 
-    // create second order
+    // create second order (market order)
     const orderReceiveID = await createOrder(
       { qty: qtyToTrade, token: localTokenPair[1] },
       wallet2.jwk
@@ -300,25 +296,37 @@ describe("Test the clob contract", () => {
 
     expect(await findOrder(orderReceiveID)).toEqual(undefined);
     expect(await findOrder(orderSendID)).toEqual(undefined);
-    expect(await balance(wallet1.address, localTokenPair[1])).toEqual(
-      balances[wallet1.address] + qtyToTrade
+
+    const contractState = await state();
+    const foreignCalls = contractState.foreignCalls.filter(
+      ({ txID }) => txID === orderReceiveID
     );
-    expect(await balance(wallet2.address, localTokenPair[0])).toEqual(
-      balances[wallet2.address] + qtyToTrade
-    );
+
+    expect(
+      foreignCalls.find(
+        ({ input, contract }: ForeignCallInterface) =>
+          contract === localTokenPair[1] &&
+          input.target === wallet1.address &&
+          input.qty === qtyToTrade
+      )
+    ).not.toEqual(undefined);
+    expect(
+      foreignCalls.find(
+        ({ input, contract }: ForeignCallInterface) =>
+          contract === localTokenPair[0] &&
+          input.target === wallet2.address &&
+          input.qty === qtyToTrade
+      )
+    ).not.toEqual(undefined);
   });
 
   // existing order is greater than new order (new order matches instantly with partially matched existing)
   it("should match a greater order with the new lesser order", async () => {
     const lesserQty = 500;
-    const balances = {
-      [wallet1.address]: await balance(wallet1.address, localTokenPair[1]),
-      [wallet2.address]: await balance(wallet2.address, localTokenPair[0])
-    };
 
     // create first order
     const orderSendID = await createOrder(
-      { qty: lesserQty * 2, token: localTokenPair[0], price: 10 },
+      { qty: lesserQty * 2, token: localTokenPair[0], price: 1 },
       wallet1.jwk
     );
 
@@ -326,7 +334,7 @@ describe("Test the clob contract", () => {
 
     // create second order
     const orderReceiveID = await createOrder(
-      { qty: lesserQty, token: localTokenPair[1], price: 10 },
+      { qty: lesserQty, token: localTokenPair[1], price: 1 },
       wallet2.jwk
     );
 
@@ -335,25 +343,37 @@ describe("Test the clob contract", () => {
     expect(sendOrder).not.toEqual(undefined);
     expect(sendOrder.quantity).toEqual(lesserQty);
     expect(await findOrder(orderReceiveID)).toEqual(undefined);
-    expect(await balance(wallet1.address, localTokenPair[1])).toEqual(
-      balances[wallet1.address] + lesserQty
+
+    const contractState = await state();
+    const foreignCalls = contractState.foreignCalls.filter(
+      ({ txID }) => txID === orderReceiveID
     );
-    expect(await balance(wallet2.address, localTokenPair[0])).toEqual(
-      balances[wallet2.address] + lesserQty
-    );
+
+    expect(
+      foreignCalls.find(
+        ({ input, contract }: ForeignCallInterface) =>
+          contract === localTokenPair[1] &&
+          input.target === wallet1.address &&
+          input.qty === lesserQty
+      )
+    ).not.toEqual(undefined);
+    expect(
+      foreignCalls.find(
+        ({ input, contract }: ForeignCallInterface) =>
+          contract === localTokenPair[0] &&
+          input.target === wallet2.address &&
+          input.qty === lesserQty
+      )
+    ).not.toEqual(undefined);
   });
 
   // new order is greater than existing (new order partially matches and is left in orderbook while existing matches completely)
   it("should match a lesser order with the new greater order", async () => {
     const lesserQty = 500;
-    const balances = {
-      [wallet1.address]: await balance(wallet1.address, localTokenPair[1]),
-      [wallet2.address]: await balance(wallet2.address, localTokenPair[0])
-    };
 
     // create first order
     const orderSendID = await createOrder(
-      { qty: lesserQty, token: localTokenPair[0], price: 10 },
+      { qty: lesserQty, token: localTokenPair[0], price: 1 },
       wallet1.jwk
     );
 
@@ -361,7 +381,7 @@ describe("Test the clob contract", () => {
 
     // create second order
     const orderReceiveID = await createOrder(
-      { qty: lesserQty * 2, token: localTokenPair[1], price: 10 },
+      { qty: lesserQty * 2, token: localTokenPair[1], price: 1 },
       wallet2.jwk
     );
 
@@ -370,12 +390,28 @@ describe("Test the clob contract", () => {
     expect(receiveOrder).not.toEqual(undefined);
     expect(receiveOrder.quantity).toEqual(lesserQty);
     expect(await findOrder(orderSendID)).toEqual(undefined);
-    expect(await balance(wallet1.address, localTokenPair[1])).toEqual(
-      balances[wallet1.address] + lesserQty
+
+    const contractState = await state();
+    const foreignCalls = contractState.foreignCalls.filter(
+      ({ txID }) => txID === orderReceiveID
     );
-    expect(await balance(wallet2.address, localTokenPair[0])).toEqual(
-      balances[wallet2.address] + lesserQty
-    );
+
+    expect(
+      foreignCalls.find(
+        ({ input, contract }: ForeignCallInterface) =>
+          contract === localTokenPair[1] &&
+          input.target === wallet1.address &&
+          input.qty === lesserQty
+      )
+    ).not.toEqual(undefined);
+    expect(
+      foreignCalls.find(
+        ({ input, contract }: ForeignCallInterface) =>
+          contract === localTokenPair[0] &&
+          input.target === wallet2.address &&
+          input.qty === lesserQty
+      )
+    ).not.toEqual(undefined);
   });
 
   it("should cancel order", async () => {

@@ -68,6 +68,9 @@ export const AddPair = async (
         tradeableSetting === true || tradeableSetting === undefined,
         `This token does not allow trading (${id})`
       );
+
+      // TODO: check if the token supports the foreign call protocol
+      // (has the foreignCalls and the invocations array)
     } catch (e) {
       throw new ContractError(e);
     }
