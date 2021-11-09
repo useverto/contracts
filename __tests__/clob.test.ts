@@ -369,7 +369,7 @@ describe("Test the clob contract", () => {
 
   // new order is greater than existing (new order partially matches and is left in orderbook while existing matches completely)
   it("should match a lesser order with the new greater order", async () => {
-    const lesserQty = 500;
+    const lesserQty = 2000;
 
     // create first order
     const orderSendID = await createOrder(

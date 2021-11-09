@@ -114,8 +114,14 @@ function matchOrder(
     (order) => order.transaction === inputTransaction
   );
   let fillAmount;
+  console.log("BEFORE", orderbook);
   // if there are no orders, push it
-  if (orderbook.filter((order) => inputToken !== order.token).length === 0) {
+  if (
+    orderbook.filter(
+      (order) =>
+        inputToken !== order.token && order.transaction !== inputTransaction
+    ).length === 0
+  ) {
     if (orderPushed) {
       return {
         orderbook,
@@ -138,6 +144,7 @@ function matchOrder(
       foreignCalls
     };
   }
+  console.log("AFTER", orderbook);
 
   for (let i = 0; i < orderbook.length; i++) {
     // continue if the sent token is the same
@@ -192,6 +199,7 @@ function matchOrder(
             }
           }
         );
+
         // Remove existing order
         orderbook.splice(i - 1, 1);
 
@@ -262,21 +270,32 @@ function matchOrder(
           }
         );
 
-        // Remove existing order & subtract input order amount from existing
-        orderbook.splice(i - 1, 1);
+        // if this order is already pushed modify the pushed
+        // order's quantity instead of pushing it again
+        if (!orderPushed) {
+          orderbook.push({
+            transaction: inputTransaction,
+            transfer: inputTransfer,
+            creator: inputCreator,
+            token: inputToken,
+            price: convertedExistingPrice,
+            quantity:
+              inputQuantity - orderbook[i].quantity * convertedExistingPrice, // Input price in units of inputToken/existingToken
+            originalQuantity: inputQuantity
+          });
+        } else {
+          // TODO: somewhy the order is undefined here
+          const order = orderbook.find(
+            (order) => order.transaction === inputTransaction
+          );
 
-        // TODO: if this order is already pushed (check with the pushed boolean)
-        // modify the pushed order's quantity instead of pushing it again
-        orderbook.push({
-          transaction: inputTransaction,
-          transfer: inputTransfer,
-          creator: inputCreator,
-          token: inputToken,
-          price: convertedExistingPrice,
-          quantity:
-            inputQuantity - orderbook[i].quantity * convertedExistingPrice, // Input price in units of inputToken/existingToken
-          originalQuantity: inputQuantity
-        });
+          order.quantity -= orderbook[i].quantity * convertedExistingPrice;
+        }
+
+        // Remove existing order & subtract input order amount from existing
+        orderbook = orderbook.filter(
+          (order) => order.transaction === orderbook[i].transaction
+        );
 
         // Call matchOrder() recursively
         console.log("7) Calling recursively");
@@ -291,32 +310,38 @@ function matchOrder(
           foreignCalls
         );
       }
-    } else if (inputPrice) {
-      // ~~ No compatible orders found for the given price ~~
-      console.log("8) Pushing the order");
-
-      if (orderPushed) {
-        return {
-          orderbook,
-          foreignCalls
-        };
-      }
-
-      return {
-        orderbook: [
-          ...orderbook,
-          {
-            transaction: inputTransaction,
-            transfer: inputTransfer,
-            creator: inputCreator,
-            token: inputToken,
-            price: inputPrice,
-            quantity: inputQuantity,
-            originalQuantity: inputQuantity
-          }
-        ],
-        foreignCalls
-      };
     }
   }
+
+  // TODO: @t8 check this
+  // moved it out of the loop, because
+  // the loop should continue until it finds
+  // an order with the input price and if it
+  // doesn't, then push it to the orderbook.
+  // This part however just does this for each
+  // loop: if the current loop does not match the
+  // inputPrice, it returns
+
+  if (orderPushed) {
+    return {
+      orderbook,
+      foreignCalls
+    };
+  }
+
+  return {
+    orderbook: [
+      ...orderbook,
+      {
+        transaction: inputTransaction,
+        transfer: inputTransfer,
+        creator: inputCreator,
+        token: inputToken,
+        price: inputPrice,
+        quantity: inputQuantity,
+        originalQuantity: inputQuantity
+      }
+    ],
+    foreignCalls
+  };
 }
