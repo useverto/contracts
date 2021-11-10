@@ -12,7 +12,7 @@ export const CancelOrder = async (
   const caller = action.caller;
   const input: CancelOrderInterface = action.input;
 
-  const orderTxID = input.transaction;
+  const orderTxID = input.orderID;
 
   // Verify order ID
   ContractAssert(isAddress(orderTxID), "Invalid order ID");
@@ -21,7 +21,7 @@ export const CancelOrder = async (
   const allOrders = state.pairs.map((pair) => pair.orders).flat(1);
 
   // Get the order to cancel
-  const order = allOrders.find(({ transaction }) => transaction === orderTxID);
+  const order = allOrders.find(({ id }) => id === orderTxID);
 
   // Ensure that the order exists
   ContractAssert(order !== undefined, "Order does not exist");
@@ -34,6 +34,7 @@ export const CancelOrder = async (
 
   // Send back the *not* filled tokens to the creator of the order
   state.foreignCalls.push({
+    txID: SmartWeave.transaction.id,
     contract: order.token,
     input: {
       function: "transfer",
@@ -44,13 +45,11 @@ export const CancelOrder = async (
 
   // The pair that the order belongs to
   const acitvePair = state.pairs.find((pair) =>
-    pair.orders.find(({ transaction }) => transaction === orderTxID)
+    pair.orders.find(({ id }) => id === orderTxID)
   );
 
   // Remove cancelled order
-  acitvePair.orders = acitvePair.orders.filter(
-    ({ transaction }) => transaction !== orderTxID
-  );
+  acitvePair.orders = acitvePair.orders.filter(({ id }) => id !== orderTxID);
 
   return state;
 };

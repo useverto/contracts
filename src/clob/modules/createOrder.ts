@@ -109,17 +109,19 @@ function matchOrder(
   orderbook: OrderInterface[],
   inputPrice?: number,
   foreignCalls: ForeignCallInterface[] = []
-) {
+): {
+  orderbook: OrderInterface[];
+  foreignCalls: ForeignCallInterface[];
+} {
   const orderPushed = !!orderbook.find(
-    (order) => order.transaction === inputTransaction
+    (order) => order.id === inputTransaction
   );
   let fillAmount;
   console.log("BEFORE", orderbook);
   // if there are no orders, push it
   if (
     orderbook.filter(
-      (order) =>
-        inputToken !== order.token && order.transaction !== inputTransaction
+      (order) => inputToken !== order.token && order.id !== inputTransaction
     ).length === 0
   ) {
     if (orderPushed) {
@@ -132,7 +134,7 @@ function matchOrder(
       orderbook: [
         ...orderbook,
         {
-          transaction: inputTransaction,
+          id: inputTransaction,
           transfer: inputTransfer,
           creator: inputCreator,
           token: inputToken,
@@ -154,7 +156,7 @@ function matchOrder(
     // the order that we are filling
     // this can happen if the order was not filled 100%
     // and matchOrder was called recursively
-    if (orderbook[i].transaction === inputTransaction) continue;
+    if (orderbook[i].id === inputTransaction) continue;
 
     const convertedExistingPrice = 1 / orderbook[i].price;
 
@@ -274,7 +276,7 @@ function matchOrder(
         // order's quantity instead of pushing it again
         if (!orderPushed) {
           orderbook.push({
-            transaction: inputTransaction,
+            id: inputTransaction,
             transfer: inputTransfer,
             creator: inputCreator,
             token: inputToken,
@@ -286,16 +288,14 @@ function matchOrder(
         } else {
           // TODO: somewhy the order is undefined here
           const order = orderbook.find(
-            (order) => order.transaction === inputTransaction
+            (order) => order.id === inputTransaction
           );
 
           order.quantity -= orderbook[i].quantity * convertedExistingPrice;
         }
 
         // Remove existing order & subtract input order amount from existing
-        orderbook = orderbook.filter(
-          (order) => order.transaction === orderbook[i].transaction
-        );
+        orderbook = orderbook.filter((order) => order.id === orderbook[i].id);
 
         // Call matchOrder() recursively
         console.log("7) Calling recursively");
@@ -333,7 +333,7 @@ function matchOrder(
     orderbook: [
       ...orderbook,
       {
-        transaction: inputTransaction,
+        id: inputTransaction,
         transfer: inputTransfer,
         creator: inputCreator,
         token: inputToken,

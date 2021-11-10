@@ -31,7 +31,7 @@ export interface CreateOrderInterface {
 
 export interface CancelOrderInterface {
   function: "cancelOrder";
-  transaction: string; // Transaction hash from the order creation contract interaction
+  orderID: string; // Transaction hash from the order creation contract interaction
 }
 
 export interface HaltInterface {
@@ -50,7 +50,7 @@ export interface SetCommunityContractInterface {
 export interface InvokeInterface {
   function: "invoke";
   foreignContract: string;
-  invocation: object;
+  invocation: InvocationInterface;
 }
 
 export interface ReadOutboxInterface {
@@ -62,7 +62,7 @@ export interface ReadOutboxInterface {
 // Other interfaces
 
 export interface OrderInterface {
-  transaction: string;
+  id: string; // ID if the order transaction
   transfer: string; // ID of the token transfer
   creator: string;
   token: string;
@@ -74,8 +74,10 @@ export interface OrderInterface {
 export interface ForeignCallInterface {
   txID: string;
   contract: string;
-  input: {
-    function: string;
-    [key: string | number]: any;
-  };
+  input: InvocationInterface;
+}
+
+export interface InvocationInterface {
+  function: string;
+  [key: string | number]: any;
 }
