@@ -2,7 +2,6 @@ import { Tag } from "arweave/node/lib/transaction";
 import { ActionInterface, ListInterface, StateInterface } from "../faces";
 
 export const List = async (state: StateInterface, action: ActionInterface) => {
-  const people = state.people;
   const tokens = state.tokens;
   const caller = action.caller;
 
@@ -38,16 +37,42 @@ export const List = async (state: StateInterface, action: ActionInterface) => {
         contractState.name && contractState.ticker,
         "Contract does not have a name or a ticker."
       );
+
+      if (type === "community") {
+        // TODO: check for communities if the lister has voting power for the community
+      } else {
+        const balances: number[] = Object.values(contractState.balances);
+        const initTx = await SmartWeave.unsafeClient.transactions.get(id);
+
+        let totalBalance = 0;
+
+        for (const balance of balances) {
+          totalBalance += balance;
+        }
+
+        // if NFT
+        if (totalBalance === 1) {
+          // if NFT, allow the current owner of the NFT to list it as well (to see
+          // if the token is an NFT, just check the total balance and the number of addresses
+          // in the balances object)
+          const owner = Object.keys(contractState.balances).find(
+            (key) => contractState.balances[key] === 1
+          );
+
+          ContractAssert(
+            owner === caller || initTx.owner === caller,
+            "Caller is not the owner or the minter of the token."
+          );
+        } else {
+          // check for normal tokens if the minter (author of contract init tx)
+          // is the lister
+          ContractAssert(
+            initTx.owner === caller,
+            "Caller is not the minter of the token."
+          );
+        }
+      }
     }
-
-    // TODO: check for normal tokens if the minter (author of contract init tx)
-    // is the lister
-
-    // TODO: check for communities if the lister has voting power for the community
-
-    // TODO: if NFT, allow the current owner of the NFT to list it as well (to see
-    // if the token is an NFT, just check the total balance and the number of addresses
-    // in the balances object)
   } catch (e) {
     throw new ContractError("Contract does not exist.");
   }
