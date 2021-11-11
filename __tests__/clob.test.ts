@@ -40,6 +40,7 @@ describe("Test the clob contract", () => {
   let localCommunityContract: string;
 
   let localTokenPair = [];
+  let localTokenPairTwo = [];
 
   async function state(): Promise<StateInterface> {
     await mine();
@@ -88,9 +89,7 @@ describe("Test the clob contract", () => {
       ({ pair }) =>
         pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]
     );
-    const order = onContractPair?.orders.find(
-      ({ transaction: tx }) => tx === orderID
-    );
+    const order = onContractPair?.orders.find(({ id: tx }) => tx === orderID);
 
     return order;
   }
@@ -143,15 +142,16 @@ describe("Test the clob contract", () => {
 
     // copy 2 PSTs for testing
     for (const pstID of EXAMPLE_TOKEN_PAIR) {
-      localTokenPair.push(
+      const copyToken = async () =>
         await arlocalUtils.copyContract(pstID, false, (state) => {
           // add some balance to the test wallets
           state.balances[wallet1.address] = initialPSTBalance;
           state.balances[wallet2.address] = initialPSTBalance;
 
           return state;
-        })
-      );
+        });
+      localTokenPair.push(await copyToken());
+      localTokenPairTwo.push(await copyToken());
     }
 
     // copy the community contract
@@ -180,7 +180,7 @@ describe("Test the clob contract", () => {
         );
 
         // push testing PSTs
-        for (const id of localTokenPair)
+        for (const id of [...localTokenPair, ...localTokenPairTwo])
           state.tokens.push({
             id,
             type: "community",
@@ -264,6 +264,11 @@ describe("Test the clob contract", () => {
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "addPair",
       pair: localTokenPair
+    });
+    // add the second token pair
+    await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
+      function: "addPair",
+      pair: localTokenPairTwo
     });
     await mine();
 
@@ -373,7 +378,7 @@ describe("Test the clob contract", () => {
 
     // create first order
     const orderSendID = await createOrder(
-      { qty: lesserQty, token: localTokenPair[0], price: 1 },
+      { qty: lesserQty, token: localTokenPairTwo[0], price: 1 },
       wallet1.jwk
     );
 
@@ -381,7 +386,7 @@ describe("Test the clob contract", () => {
 
     // create second order
     const orderReceiveID = await createOrder(
-      { qty: lesserQty * 2, token: localTokenPair[1], price: 1 },
+      { qty: lesserQty * 2, token: localTokenPairTwo[1], price: 1 },
       wallet2.jwk
     );
 
@@ -399,7 +404,7 @@ describe("Test the clob contract", () => {
     expect(
       foreignCalls.find(
         ({ input, contract }: ForeignCallInterface) =>
-          contract === localTokenPair[1] &&
+          contract === localTokenPairTwo[1] &&
           input.target === wallet1.address &&
           input.qty === lesserQty
       )
@@ -407,7 +412,7 @@ describe("Test the clob contract", () => {
     expect(
       foreignCalls.find(
         ({ input, contract }: ForeignCallInterface) =>
-          contract === localTokenPair[0] &&
+          contract === localTokenPairTwo[0] &&
           input.target === wallet2.address &&
           input.qty === lesserQty
       )
@@ -428,7 +433,7 @@ describe("Test the clob contract", () => {
 
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "cancelOrder",
-      transaction: orderID
+      orderID
     });
     await mine();
 

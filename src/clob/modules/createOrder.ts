@@ -116,8 +116,7 @@ function matchOrder(
   const orderPushed = !!orderbook.find(
     (order) => order.id === inputTransaction
   );
-  let fillAmount;
-  console.log("BEFORE", orderbook);
+  let fillAmount: number;
   // if there are no orders, push it
   if (
     orderbook.filter(
@@ -146,7 +145,6 @@ function matchOrder(
       foreignCalls
     };
   }
-  console.log("AFTER", orderbook);
 
   for (let i = 0; i < orderbook.length; i++) {
     // continue if the sent token is the same
@@ -176,6 +174,7 @@ function matchOrder(
 
     if (inputPrice === convertedExistingPrice || !inputPrice) {
       console.log("3) Found compatible order");
+      console.log(orderbook[i]);
       if (fillAmount === orderbook[i].quantity) {
         // ~~ Matched orders completely filled ~~
         // Send tokens from new order to existing order creator
@@ -271,10 +270,14 @@ function matchOrder(
             }
           }
         );
+        console.log("INPUT QUANTITY", inputQuantity);
+        console.log("ORDERBOOK ORDER QUANTITY", orderbook[i].quantity);
+        console.log("CONVERTED EXISTING PRICE", convertedExistingPrice);
 
         // if this order is already pushed modify the pushed
         // order's quantity instead of pushing it again
         if (!orderPushed) {
+          console.log("NOT ORDER PUSHED");
           orderbook.push({
             id: inputTransaction,
             transfer: inputTransfer,
@@ -290,16 +293,19 @@ function matchOrder(
           const order = orderbook.find(
             (order) => order.id === inputTransaction
           );
-
+          console.log(
+            order.quantity - orderbook[i].quantity * convertedExistingPrice
+          );
           order.quantity -= orderbook[i].quantity * convertedExistingPrice;
         }
 
         // Remove existing order & subtract input order amount from existing
-        orderbook = orderbook.filter((order) => order.id === orderbook[i].id);
+        orderbook = orderbook.filter((order) => order.id !== orderbook[i].id);
 
         // Call matchOrder() recursively
         console.log("7) Calling recursively");
-        matchOrder(
+
+        return matchOrder(
           inputToken,
           inputQuantity,
           inputCreator,
