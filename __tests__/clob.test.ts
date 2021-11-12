@@ -79,12 +79,6 @@ describe("Test the clob contract", () => {
     return orderID;
   }
 
-  async function balance(addr: string, token: string): Promise<number> {
-    const tokenState = await readContract(arweave, token);
-
-    return tokenState.balances[addr] ?? 0;
-  }
-
   async function findOrder(orderID: string, tokenPair: string[]) {
     const contractState = await state();
     const onContractPair = contractState.pairs.find(
@@ -446,15 +440,10 @@ describe("Test the clob contract", () => {
   });
 
   it("should cancel order", async () => {
-    const initialBalance = await balance(wallet1.address, localTokenPair[0]);
     const qty = 1000;
     const orderID = await createOrder(
       { qty, token: localTokenPair[0], price: 10, tokenPair: localTokenPair },
       wallet1.jwk
-    );
-
-    expect(await balance(wallet1.address, localTokenPair[0])).toEqual(
-      initialBalance - qty
     );
 
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
@@ -464,9 +453,16 @@ describe("Test the clob contract", () => {
     await mine();
 
     expect(await findOrder(orderID, localTokenPair)).toEqual(undefined);
-    expect(await balance(wallet1.address, localTokenPair[0])).toEqual(
-      initialBalance
-    );
+
+    const foreignCalls = (await state()).foreignCalls;
+    expect(
+      foreignCalls.find(
+        ({ input, contract }: ForeignCallInterface) =>
+          contract === localTokenPair[0] &&
+          input.qty === qty &&
+          input.target === wallet1.address
+      )
+    ).not.toEqual(undefined);
   });
 
   it("should toggle pair gatekeeper", async () => {
