@@ -39,8 +39,8 @@ describe("Test the clob contract", () => {
   let CONTRACT_ID: string;
   let localCommunityContract: string;
 
-  let localTokenPair = [];
-  let localTokenPairTwo = [];
+  let localTokenPair: string[] = [];
+  let localTokenPairTwo: string[] = [];
 
   async function state(): Promise<StateInterface> {
     await mine();
@@ -51,11 +51,13 @@ describe("Test the clob contract", () => {
     {
       qty,
       token,
-      price
+      price,
+      tokenPair
     }: {
       qty: number;
       token: string;
       price?: number;
+      tokenPair: string[];
     },
     wallet: JWKInterface
   ) {
@@ -69,7 +71,7 @@ describe("Test the clob contract", () => {
     const orderID = await interactWrite(arweave, wallet, CONTRACT_ID, {
       function: "createOrder",
       transaction,
-      pair: localTokenPair,
+      pair: tokenPair,
       price
     });
     await mine();
@@ -83,11 +85,10 @@ describe("Test the clob contract", () => {
     return tokenState.balances[addr] ?? 0;
   }
 
-  async function findOrder(orderID: string) {
+  async function findOrder(orderID: string, tokenPair: string[]) {
     const contractState = await state();
     const onContractPair = contractState.pairs.find(
-      ({ pair }) =>
-        pair[0] === localTokenPair[0] && pair[1] === localTokenPair[1]
+      ({ pair }) => pair[0] === tokenPair[0] && pair[1] === tokenPair[1]
     );
     const order = onContractPair?.orders.find(({ id: tx }) => tx === orderID);
 
@@ -103,8 +104,8 @@ describe("Test the clob contract", () => {
     arweave = new Arweave({
       host: "localhost",
       port,
-      protocol: "http",
-      logging: true
+      protocol: "http"
+      // logging: true
     });
 
     // generate test wallets
@@ -287,20 +288,25 @@ describe("Test the clob contract", () => {
 
     // create first order
     const orderSendID = await createOrder(
-      { qty: qtyToTrade, token: localTokenPair[0], price: 1 },
+      {
+        qty: qtyToTrade,
+        token: localTokenPair[0],
+        price: 1,
+        tokenPair: localTokenPair
+      },
       wallet1.jwk
     );
 
-    expect(await findOrder(orderSendID)).not.toEqual(undefined);
+    expect(await findOrder(orderSendID, localTokenPair)).not.toEqual(undefined);
 
     // create second order (market order)
     const orderReceiveID = await createOrder(
-      { qty: qtyToTrade, token: localTokenPair[1] },
+      { qty: qtyToTrade, token: localTokenPair[1], tokenPair: localTokenPair },
       wallet2.jwk
     );
 
-    expect(await findOrder(orderReceiveID)).toEqual(undefined);
-    expect(await findOrder(orderSendID)).toEqual(undefined);
+    expect(await findOrder(orderReceiveID, localTokenPair)).toEqual(undefined);
+    expect(await findOrder(orderSendID, localTokenPair)).toEqual(undefined);
 
     const contractState = await state();
     const foreignCalls = contractState.foreignCalls.filter(
@@ -331,23 +337,33 @@ describe("Test the clob contract", () => {
 
     // create first order
     const orderSendID = await createOrder(
-      { qty: lesserQty * 2, token: localTokenPair[0], price: 1 },
+      {
+        qty: lesserQty * 2,
+        token: localTokenPair[0],
+        price: 1,
+        tokenPair: localTokenPair
+      },
       wallet1.jwk
     );
 
-    expect(await findOrder(orderSendID)).not.toEqual(undefined);
+    expect(await findOrder(orderSendID, localTokenPair)).not.toEqual(undefined);
 
     // create second order
     const orderReceiveID = await createOrder(
-      { qty: lesserQty, token: localTokenPair[1], price: 1 },
+      {
+        qty: lesserQty,
+        token: localTokenPair[1],
+        price: 1,
+        tokenPair: localTokenPair
+      },
       wallet2.jwk
     );
 
-    const sendOrder = await findOrder(orderSendID);
+    const sendOrder = await findOrder(orderSendID, localTokenPair);
 
     expect(sendOrder).not.toEqual(undefined);
     expect(sendOrder.quantity).toEqual(lesserQty);
-    expect(await findOrder(orderReceiveID)).toEqual(undefined);
+    expect(await findOrder(orderReceiveID, localTokenPair)).toEqual(undefined);
 
     const contractState = await state();
     const foreignCalls = contractState.foreignCalls.filter(
@@ -378,23 +394,35 @@ describe("Test the clob contract", () => {
 
     // create first order
     const orderSendID = await createOrder(
-      { qty: lesserQty, token: localTokenPairTwo[0], price: 1 },
+      {
+        qty: lesserQty,
+        token: localTokenPairTwo[0],
+        price: 1,
+        tokenPair: localTokenPairTwo
+      },
       wallet1.jwk
     );
 
-    expect(await findOrder(orderSendID)).not.toEqual(undefined);
+    expect(await findOrder(orderSendID, localTokenPairTwo)).not.toEqual(
+      undefined
+    );
 
     // create second order
     const orderReceiveID = await createOrder(
-      { qty: lesserQty * 2, token: localTokenPairTwo[1], price: 1 },
+      {
+        qty: lesserQty * 2,
+        token: localTokenPairTwo[1],
+        price: 1,
+        tokenPair: localTokenPairTwo
+      },
       wallet2.jwk
     );
 
-    const receiveOrder = await findOrder(orderReceiveID);
+    const receiveOrder = await findOrder(orderReceiveID, localTokenPairTwo);
 
     expect(receiveOrder).not.toEqual(undefined);
     expect(receiveOrder.quantity).toEqual(lesserQty);
-    expect(await findOrder(orderSendID)).toEqual(undefined);
+    expect(await findOrder(orderSendID, localTokenPairTwo)).toEqual(undefined);
 
     const contractState = await state();
     const foreignCalls = contractState.foreignCalls.filter(
@@ -412,9 +440,7 @@ describe("Test the clob contract", () => {
     expect(
       foreignCalls.find(
         ({ input, contract }: ForeignCallInterface) =>
-          contract === localTokenPairTwo[0] &&
-          input.target === wallet2.address &&
-          input.qty === lesserQty
+          contract === localTokenPairTwo[0] && input.qty === lesserQty
       )
     ).not.toEqual(undefined);
   });
@@ -423,7 +449,7 @@ describe("Test the clob contract", () => {
     const initialBalance = await balance(wallet1.address, localTokenPair[0]);
     const qty = 1000;
     const orderID = await createOrder(
-      { qty, token: localTokenPair[0], price: 10 },
+      { qty, token: localTokenPair[0], price: 10, tokenPair: localTokenPair },
       wallet1.jwk
     );
 
@@ -437,14 +463,11 @@ describe("Test the clob contract", () => {
     });
     await mine();
 
-    expect(await findOrder(orderID)).toEqual(undefined);
+    expect(await findOrder(orderID, localTokenPair)).toEqual(undefined);
     expect(await balance(wallet1.address, localTokenPair[0])).toEqual(
       initialBalance
     );
   });
-
-  // TODO: check the canceller balance (expect it to be the initial one again)
-  // to see if the canceling was succesful
 
   it("should toggle pair gatekeeper", async () => {
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {

@@ -18,7 +18,6 @@ export const CreateOrder = async (
   const usedPair = input.pair;
   const tokenTx = input.transaction;
   const price = input.price;
-  let pairIndex: number;
 
   // Test that pairs are valid contract strings
   ContractAssert(
@@ -26,16 +25,12 @@ export const CreateOrder = async (
     "One of two supplied pairs is invalid"
   );
 
-  // Test if pair already exists
-  for (let i = 0; i < pairs.length; i++) {
-    const currentPair = pairs[i].pair;
-    if (
-      currentPair.includes(usedPair[0]) &&
-      currentPair.includes(usedPair[1])
-    ) {
-      pairIndex = i;
-    }
-  }
+  // Find the pair index
+  const pairIndex = pairs.findIndex(
+    ({ pair }) => pair.includes(usedPair[0]) && pair.includes(usedPair[1])
+  );
+
+  // Test if the pair already exists
   ContractAssert(pairIndex !== undefined, "This pair does not exist yet");
 
   let contractID = "",

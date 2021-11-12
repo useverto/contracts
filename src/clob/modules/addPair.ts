@@ -12,6 +12,9 @@ export const AddPair = async (
   const gatekeeperActive = state.pairGatekeeper;
   const newPair = input.pair;
 
+  // Check if the pair length is valid
+  ContractAssert(newPair.length === 2, "Invalid pair length. Should be 2");
+
   // Test that pairs are valid contract strings
   ContractAssert(
     /[a-z0-9_-]{43}/i.test(newPair[0]) && /[a-z0-9_-]{43}/i.test(newPair[1]),
