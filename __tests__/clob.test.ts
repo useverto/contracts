@@ -24,7 +24,7 @@ const EXAMPLE_TOKEN_PAIR = [
 ];
 const initialPSTBalance = 1000000;
 
-jest.setTimeout(120000);
+jest.setTimeout(1200000);
 
 describe("Test the clob contract", () => {
   let wallet1: {
