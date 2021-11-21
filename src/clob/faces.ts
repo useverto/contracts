@@ -59,6 +59,15 @@ export interface ReadOutboxInterface {
   id: string;
 }
 
+// TODO: foreign transfer module
+
+export interface ForeignTransferInterface {
+  function: "foreignTransfer";
+  tokenID: string;
+  target: string;
+  qty: number;
+}
+
 // Other interfaces
 
 export interface OrderInterface {

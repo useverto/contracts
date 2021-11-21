@@ -2,6 +2,7 @@ import { StateInterface, ActionInterface } from "./faces";
 
 import { TogglePairGatekeeper } from "./modules/togglePairGatekeeper";
 import { SetCommunityContract } from "./modules/setCommunityContract";
+import { ForeignTransfer } from "./modules/foreignTransfer";
 import { CreateOrder } from "./modules/createOrder";
 import { CancelOrder } from "./modules/cancelOrder";
 import { ReadOutbox } from "./modules/readOutbox";
@@ -36,6 +37,9 @@ export async function handle(state: StateInterface, action: ActionInterface) {
 
     case "setCommunityContract":
       return { state: SetCommunityContract(state, action) };
+
+    case "foreignTransfer":
+      return { state: ForeignTransfer(state, action) };
 
     case "halt":
       return { state: Halt(state, action) };
