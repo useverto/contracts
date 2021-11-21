@@ -255,6 +255,28 @@ describe("Test the clob contract", () => {
     expect(contractState.communityContract).toEqual(localCommunityContract);
   });
 
+  it("should transfer with FCP & foreign transfer", async () => {
+    const interactionID = await interactWrite(
+      arweave,
+      wallet1.jwk,
+      CONTRACT_ID,
+      {
+        function: "foreignTransfer",
+        tokenID: localTokenPair[0],
+        target: wallet2.address,
+        qty: 1000
+      }
+    );
+    await mine();
+
+    const contractState = await state();
+    const transferCall = contractState.foreignCalls.find(
+      ({ txID }) => txID === interactionID
+    );
+
+    expect(transferCall).not.toEqual(undefined);
+  });
+
   it("should add a new pair", async () => {
     await interactWrite(arweave, wallet1.jwk, CONTRACT_ID, {
       function: "addPair",
