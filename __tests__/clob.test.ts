@@ -72,7 +72,8 @@ describe("Test the clob contract", () => {
       function: "createOrder",
       transaction,
       pair: tokenPair,
-      price
+      price,
+      token
     });
     await mine();
 
