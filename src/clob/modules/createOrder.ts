@@ -25,9 +25,6 @@ export const CreateOrder = async (
     "One of two supplied pairs is invalid"
   );
 
-  // Check if the token id is submitted
-  ContractAssert(!!input.token, "Token ID not submitted");
-
   // Find the pair index
   const pairIndex = pairs.findIndex(
     ({ pair }) => pair.includes(usedPair[0]) && pair.includes(usedPair[1])
@@ -67,7 +64,7 @@ export const CreateOrder = async (
     "No contract ID found in the transfer transaction"
   );
   ContractAssert(
-    usedPair.includes(contractID) || contractID !== input.token,
+    usedPair.includes(contractID),
     "Invalid transfer transaction, using the wrong token"
   );
   ContractAssert(isAddress(contractID), "Invalid contract ID format");
