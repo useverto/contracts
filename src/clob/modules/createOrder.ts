@@ -128,6 +128,14 @@ function matchOrder(
         foreignCalls
       };
     }
+
+    // The input price should be defined here, because this is a first order for this pair
+    // TODO: @t8 check this
+    ContractAssert(
+      !!inputPrice,
+      "Input price should be defined for the first order to a pair"
+    );
+
     return {
       orderbook: [
         ...orderbook,
