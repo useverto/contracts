@@ -33,8 +33,11 @@ export const CreateOrder = async (
   // Test if the pair already exists
   ContractAssert(pairIndex !== undefined, "This pair does not exist yet");
 
+  // id of the transferred token
   let contractID = "",
+    // transfer interaction input
     contractInput,
+    // transfer transaction object
     transferTx;
 
   // Grab the contract id of the token they are transferring in the supplied tx
@@ -64,8 +67,8 @@ export const CreateOrder = async (
     "No contract ID found in the transfer transaction"
   );
   ContractAssert(
-    usedPair.includes(contractID),
-    "Invalid transfer transaction, using the wrong token"
+    usedPair[0] === contractID,
+    "Invalid transfer transaction, using the wrong token. The transferred token has to be the first item in the pair"
   );
   ContractAssert(isAddress(contractID), "Invalid contract ID format");
 

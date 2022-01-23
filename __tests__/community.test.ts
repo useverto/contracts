@@ -40,6 +40,7 @@ describe("Test the community contract", () => {
 
     wallet.jwk = await arweave.wallets.generate();
     wallet.address = await arweave.wallets.getAddress(wallet.jwk);
+    await arweave.api.get(`/mint/${wallet.address}/1000000000000`);
 
     const contractSrc = new TextDecoder().decode(
       await readFile(join(__dirname, "../community/index.js"))

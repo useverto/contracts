@@ -43,6 +43,10 @@ describe("Test the collection contract", () => {
     wallet1.address = await arweave.wallets.getAddress(wallet1.jwk);
     wallet2.address = await arweave.wallets.getAddress(wallet2.jwk);
 
+    // add balances to test wallets
+    await arweave.api.get(`/mint/${wallet1.address}/1000000000000`);
+    await arweave.api.get(`/mint/${wallet2.address}/1000000000000`);
+
     const contractSrc = new TextDecoder().decode(
       await readFile(join(__dirname, "../collection/index.js"))
     );

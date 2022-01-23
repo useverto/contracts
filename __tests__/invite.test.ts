@@ -53,6 +53,10 @@ describe("Test the invite contract", () => {
     wallet2.address = await arweave.wallets.getAddress(wallet2.jwk);
     wallet3.address = await arweave.wallets.getAddress(wallet3.jwk);
 
+    await arweave.api.get(`/mint/${wallet1.address}/1000000000000`);
+    await arweave.api.get(`/mint/${wallet2.address}/1000000000000`);
+    await arweave.api.get(`/mint/${wallet3.address}/1000000000000`);
+
     const contractSrc = new TextDecoder().decode(
       await readFile(join(__dirname, "../invite/index.js"))
     );

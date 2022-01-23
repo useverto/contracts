@@ -1275,9 +1275,9 @@ arlocal-utils@^1.0.2:
     redstone-smartweave "^0.3.10-alpha.13"
 
 arlocal@^1.1.3:
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/arlocal/-/arlocal-1.1.3.tgz#d9bdf5f5125375ad6843771aed4c0a62c71b15cb"
-  integrity sha512-4rAeKSDfle99+xBOHxsN23Z6dZDB7dWJqyJDL1CwccCEhVBYqqTNKi0sWtRfhdjTHKYkxM5i9B2PKwA+EUC+rQ==
+  version "1.1.16"
+  resolved "https://registry.yarnpkg.com/arlocal/-/arlocal-1.1.16.tgz#0168da9b95e41b9f0c15681d8acebf1520e29d06"
+  integrity sha512-d+JrPxetm1/avIzxCxbCS32/TqDJqLfyZWwkyDd0/Qf5S5xRezZpVRPPOhZ3W91Ci05gLj2gmeLM9u1HuxiXMQ==
   dependencies:
     "@koa/cors" "^3.1.0"
     apollo-server-koa "^2.25.1"

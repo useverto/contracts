@@ -108,6 +108,10 @@ describe("Test the clob contract", () => {
     wallet1.address = await arweave.wallets.getAddress(wallet1.jwk);
     wallet2.address = await arweave.wallets.getAddress(wallet2.jwk);
 
+    // add balances to test wallets
+    await arweave.api.get(`/mint/${wallet1.address}/1000000000000`);
+    await arweave.api.get(`/mint/${wallet2.address}/1000000000000`);
+
     // deploy contract locally
     const contractSrc = new TextDecoder().decode(
       await readFile(join(__dirname, "../clob/index.js"))
