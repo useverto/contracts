@@ -202,6 +202,10 @@ function matchOrder(
         // ~~ Matched orders completely filled ~~
         // Send tokens from new order to existing order creator
         console.log("4) ~~ Matched orders completely filled ~~");
+
+        // this is 100% of the "current order in the loop"'s quantity
+        const sendAmount = orderbook[i].quantity;
+
         foreignCalls.push(
           {
             txID: SmartWeave.transaction.id,
@@ -219,10 +223,17 @@ function matchOrder(
             input: {
               function: "transfer",
               target: inputCreator,
-              qty: orderbook[i].quantity
+              qty: sendAmount
             }
           }
         );
+
+        // push the swap to the logs
+        logs.push({
+          id: orderbook[i].id,
+          price: inputPrice || convertedExistingPrice,
+          qty: sendAmount
+        });
 
         // Remove existing order
         orderbook.splice(i - 1, 1);
@@ -238,6 +249,7 @@ function matchOrder(
         console.log(
           "5) ~~ Input order filled; existing order not completely filled ~~"
         );
+
         foreignCalls.push(
           {
             txID: SmartWeave.transaction.id,
@@ -259,6 +271,14 @@ function matchOrder(
             }
           }
         );
+
+        // push the swap to the logs
+        logs.push({
+          id: orderbook[i].id,
+          price: inputPrice || convertedExistingPrice,
+          qty: fillAmount
+        });
+
         // Keep existing order but subtract order amount from input
         orderbook[i].quantity -= fillAmount;
 
@@ -273,6 +293,9 @@ function matchOrder(
         console.log(
           "6) ~~ Input order not completely filled; existing order filled ~~"
         );
+
+        const sendAmount = orderbook[i].quantity;
+
         foreignCalls.push(
           {
             txID: SmartWeave.transaction.id,
@@ -280,8 +303,7 @@ function matchOrder(
             input: {
               function: "transfer",
               target: orderbook[i].creator,
-              qty:
-                inputQuantity - orderbook[i].quantity * convertedExistingPrice
+              qty: inputQuantity - sendAmount * convertedExistingPrice
             }
           },
           // Send new order creator tokens from existing order
@@ -291,10 +313,18 @@ function matchOrder(
             input: {
               function: "transfer",
               target: inputCreator,
-              qty: orderbook[i].quantity
+              qty: sendAmount
             }
           }
         );
+
+        // push the swap to the logs
+        logs.push({
+          id: orderbook[i].id,
+          price: inputPrice || convertedExistingPrice,
+          qty: sendAmount
+        });
+
         console.log("INPUT QUANTITY", inputQuantity);
         console.log("ORDERBOOK ORDER QUANTITY", orderbook[i].quantity);
         console.log("CONVERTED EXISTING PRICE", convertedExistingPrice);
