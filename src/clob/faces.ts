@@ -6,6 +6,11 @@ export interface StateInterface {
   communityContract: string; // ID of the Verto community contract
   pairs: {
     pair: [string, string];
+    priceLogs?: {
+      orderID: string; // id of the last order made
+      token: string; // id of the token that was sent in the last order made
+      logs: PriceLogInterface[];
+    };
     orders: OrderInterface[];
   }[];
   invocations: string[];
@@ -88,4 +93,10 @@ export interface ForeignCallInterface {
 export interface InvocationInterface {
   function: string;
   [key: string | number]: any;
+}
+
+export interface PriceLogInterface {
+  id: string; // order ID that matched with the last order
+  price: number; // the price the token was bought at
+  qty: number; // qty that the user got in return for their order
 }

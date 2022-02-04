@@ -3,7 +3,8 @@ import {
   StateInterface,
   CreateOrderInterface,
   OrderInterface,
-  ForeignCallInterface
+  ForeignCallInterface,
+  PriceLogInterface
 } from "../faces";
 import { ensureValidTransfer, isAddress } from "../utils";
 
@@ -66,8 +67,11 @@ export const CreateOrder = async (
     contractID !== "",
     "No contract ID found in the transfer transaction"
   );
+
+  const fromToken = usedPair[0];
+
   ContractAssert(
-    usedPair[0] === contractID,
+    fromToken === contractID,
     "Invalid transfer transaction, using the wrong token. The transferred token has to be the first item in the pair"
   );
   ContractAssert(isAddress(contractID), "Invalid contract ID format");
@@ -94,6 +98,13 @@ export const CreateOrder = async (
   // Update orderbook accordingly
   state.pairs[pairIndex].orders = orderbook;
 
+  // add this orders price log as the last order price log to the pair object
+  state.pairs[pairIndex].priceLogs = {
+    orderID: SmartWeave.transaction.id,
+    token: fromToken,
+    logs: []
+  };
+
   // Update foreignCalls accordingly for tokens to be sent
   for (let i = 0; i < foreignCalls.length; i++) {
     state.foreignCalls.push(foreignCalls[i]);
@@ -110,10 +121,12 @@ function matchOrder(
   inputTransfer: string,
   orderbook: OrderInterface[],
   inputPrice?: number,
-  foreignCalls: ForeignCallInterface[] = []
+  foreignCalls: ForeignCallInterface[] = [],
+  logs: PriceLogInterface[] = []
 ): {
   orderbook: OrderInterface[];
   foreignCalls: ForeignCallInterface[];
+  logs?: PriceLogInterface[];
 } {
   const orderPushed = !!orderbook.find(
     (order) => order.id === inputTransaction
@@ -125,19 +138,19 @@ function matchOrder(
       (order) => inputToken !== order.token && order.id !== inputTransaction
     ).length === 0
   ) {
-    if (orderPushed) {
-      return {
-        orderbook,
-        foreignCalls
-      };
-    }
-
     // The input price should be defined here, because this is a first order for this pair
     // TODO: @t8 check this
     ContractAssert(
       !!inputPrice,
       "Input price should be defined for the first order to a pair"
     );
+
+    if (orderPushed) {
+      return {
+        orderbook,
+        foreignCalls
+      };
+    }
 
     return {
       orderbook: [
@@ -216,7 +229,8 @@ function matchOrder(
 
         return {
           orderbook,
-          foreignCalls
+          foreignCalls,
+          logs
         };
       } else if (fillAmount < orderbook[i].quantity) {
         // ~~ Input order filled; existing order not completely filled ~~
@@ -250,7 +264,8 @@ function matchOrder(
 
         return {
           orderbook,
-          foreignCalls
+          foreignCalls,
+          logs
         };
       } else if (fillAmount > orderbook[i].quantity) {
         // ~~ Input order not completely filled; existing order filled ~~
@@ -323,7 +338,8 @@ function matchOrder(
           inputTransfer,
           orderbook,
           convertedExistingPrice,
-          foreignCalls
+          foreignCalls,
+          logs
         );
       }
     }
@@ -341,7 +357,8 @@ function matchOrder(
   if (orderPushed) {
     return {
       orderbook,
-      foreignCalls
+      foreignCalls,
+      logs
     };
   }
 
@@ -358,6 +375,7 @@ function matchOrder(
         originalQuantity: inputQuantity
       }
     ],
-    foreignCalls
+    foreignCalls,
+    logs
   };
 }
