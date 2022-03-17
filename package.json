@@ -1,11 +1,20 @@
 {
   "name": "@verto/contracts",
   "version": "0.0.1",
+  "author": "th8ta LLC",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "build/index.js",
   "types": "build",
+  "files": [
+    "types.d.ts",
+    "build"
+  ],
   "scripts": {
     "build": "node ./build.js",
-    "build-module": "tsc src/index.ts --project tsconfig.json",
+    "build-module": "tsc --project tsconfig.module.json",
     "fmt": "prettier --write .",
     "test": "node ./build.js && jest ./dist/tests",
     "fmt:check": "prettier --check ."

@@ -17,8 +17,8 @@ export const Claim = (state: StateInterface, action: ActionInterface) => {
   // if the supplied addresses does not include the caller
   if (!addresses.includes(caller)) addresses.push(caller);
 
-  ContractAssert(username, "Caller did not supply a valid username.");
-  ContractAssert(name, "Caller did not supply a valid name.");
+  ContractAssert(!!username, "Caller did not supply a valid username.");
+  ContractAssert(!!name, "Caller did not supply a valid name.");
 
   const person = people.find((user) => user.username === username);
 

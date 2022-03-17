@@ -56,7 +56,7 @@ export const List = async (state: StateInterface, action: ActionInterface) => {
   const identity = people.find((user) =>
     user.addresses.find((address) => address === caller)
   );
-  ContractAssert(identity, "Caller does not have an identity.");
+  ContractAssert(!!identity, "Caller does not have an identity.");
 
   const token = tokens.find((item) => item.id === id);
   ContractAssert(!token, "Token has already been listed.");
