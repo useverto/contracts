@@ -4,6 +4,8 @@ export interface StateInterface {
   owner: string; // contract deployer
   collaborators: string[]; // addresses that can edit this collection
   items: string[]; // id of the tokens in the collection
+  invocations: string[];
+  foreignCalls: ForeignCallInterface[];
 }
 
 export interface ActionInterface {
@@ -27,4 +29,31 @@ export interface UpdateDetailsInterface {
 export interface UpdateCollaboratorsInterface {
   function: "updateCollaborators";
   collaborators: string[];
+}
+
+// FCP inputs
+
+export interface InvokeInterface {
+  function: "invoke";
+  foreignContract: string;
+  invocation: InvocationInterface;
+}
+
+export interface ReadOutboxInterface {
+  function: "readOutbox";
+  contract: string;
+  id: string;
+}
+
+// FCP state interfaces
+
+export interface ForeignCallInterface {
+  txID: string;
+  contract: string;
+  input: InvocationInterface;
+}
+
+export interface InvocationInterface {
+  function: string;
+  [key: string | number]: any;
 }
