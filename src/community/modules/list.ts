@@ -24,7 +24,7 @@ export const List = async (state: StateInterface, action: ActionInterface) => {
 
   // check if the contract exists
   try {
-    const contractState = await getInitialState(id);
+    const { state: contractState, initTx } = await getInitialState(id);
 
     ContractAssert(!!contractState, "Contract state is null.");
 
@@ -40,14 +40,33 @@ export const List = async (state: StateInterface, action: ActionInterface) => {
       );
     }
 
-    // TODO: check for normal tokens if the minter (author of contract init tx)
+    // check if a contract is an NFT
+    const isNFT =
+      Object.values(contractState.balances).reduce(
+        (a: number, b: number) => a + b
+      ) === 1;
+
+    // check for tokens if the minter (author of contract init tx)
     // is the lister
+    // TODO: check for communities if the lister has voting power for the community instead
+    const minter = initTx.owner;
 
-    // TODO: check for communities if the lister has voting power for the community
+    if (!isNFT) {
+      ContractAssert(
+        caller === minter,
+        "Caller is not the minter of the token."
+      );
+    } else {
+      // if NFT, allow the current owner of the NFT to list it as well
+      const currentOwner = Object.keys(contractState.balances).find(
+        (addr) => contractState.balances[addr] > 0
+      );
 
-    // TODO: if NFT, allow the current owner of the NFT to list it as well (to see
-    // if the token is an NFT, just check the total balance and the number of addresses
-    // in the balances object)
+      ContractAssert(
+        caller === minter || caller === currentOwner,
+        "Caller is not the minter or the current owner of the token."
+      );
+    }
   } catch (e) {
     throw new ContractError("Contract does not exist.");
   }
@@ -73,22 +92,31 @@ async function getInitialState(contractID: string) {
   const contractTX = await SmartWeave.unsafeClient.transactions.get(contractID);
 
   if (getTagValue("Init-State", contractTX.tags))
-    return JSON.parse(getTagValue("Init-State", contractTX.tags));
+    return {
+      state: JSON.parse(getTagValue("Init-State", contractTX.tags)),
+      initTx: contractTX
+    };
 
   if (getTagValue("Init-State-TX", contractTX.tags))
-    return JSON.parse(
-      (await SmartWeave.unsafeClient.transactions.getData(
-        getTagValue("Init-State-TX", contractTX.tags),
-        { decode: true, string: true }
-      )) as string
-    );
+    return {
+      state: JSON.parse(
+        (await SmartWeave.unsafeClient.transactions.getData(
+          getTagValue("Init-State-TX", contractTX.tags),
+          { decode: true, string: true }
+        )) as string
+      ),
+      initTx: contractTX
+    };
 
-  return JSON.parse(
-    (await SmartWeave.unsafeClient.transactions.getData(contractID, {
-      decode: true,
-      string: true
-    })) as string
-  );
+  return {
+    state: JSON.parse(
+      (await SmartWeave.unsafeClient.transactions.getData(contractID, {
+        decode: true,
+        string: true
+      })) as string
+    ),
+    initTx: contractTX
+  };
 }
 
 const getTagValue = (name: string, tags: Tag[]) =>
