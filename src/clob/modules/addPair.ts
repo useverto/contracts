@@ -1,4 +1,5 @@
 import { ActionInterface, StateInterface, AddPairInterface } from "../faces";
+import { StateInterface as CommunityContractStateInterface } from "../../community/faces";
 
 export const AddPair = async (
   state: StateInterface,
@@ -21,14 +22,23 @@ export const AddPair = async (
     "One of two supplied pairs is invalid"
   );
 
+  // Read the community contract's state
+  // If this fails, make sure to check if the community contract ID is valid
+  const communityState: CommunityContractStateInterface =
+    await SmartWeave.contracts.readContractState(communityContract);
+
+  // Check if the tokens in the pair are listed on Verto
+  ContractAssert(
+    !!communityState.tokens.find(({ id }) => id === newPair[0]),
+    `${newPair[0]} is not listed on Verto`
+  );
+  ContractAssert(
+    !!communityState.tokens.find(({ id }) => id === newPair[1]),
+    `${newPair[1]} is not listed on Verto`
+  );
+
   // If the gatekeeper is active, check if the caller has a Verto ID
   if (gatekeeperActive) {
-    // Read the community contract's state
-    // If this fails, make sure to check if the community contract ID is valid
-    const communityState = await SmartWeave.contracts.readContractState(
-      communityContract
-    );
-
     ContractAssert(
       !!communityState.people.find((person) =>
         person.addresses.includes(caller)
