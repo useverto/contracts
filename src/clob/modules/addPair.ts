@@ -82,8 +82,16 @@ export const AddPair = async (
         `This token does not allow trading (${id})`
       );
 
-      // TODO: check if the token supports the foreign call protocol
+      // Check if the token supports the foreign call protocol
       // (has the foreignCalls and the invocations array)
+      ContractAssert(
+        !!tokenState.invocations,
+        'Contract does not have an "invocations" filed, making it incompatible with FCP'
+      );
+      ContractAssert(
+        !!tokenState.foreignCalls,
+        'Contract does not have an "foreignCalls" filed, making it incompatible with FCP'
+      );
     } catch (e) {
       throw new ContractError(e);
     }
