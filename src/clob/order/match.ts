@@ -6,13 +6,21 @@ import {
 import { isInOrderBook } from "../utils";
 
 export default function matchOrder(
-  inputToken: string, // Token of the new order
-  inputQuantity: number,
-  inputCreator: string,
-  inputTransaction: string,
-  inputTransfer: string,
+  input: {
+    /** Token of the new order */
+    token: string;
+    /** Quantity of the order */
+    quantity: number;
+    /** Address of the order creator */
+    creator: string;
+    /** Interaction ID */
+    transaction: string;
+    /** Transfer transaction ID */
+    transfer: string;
+    /** Optional limit price of the order */
+    price?: number;
+  },
   orderbook: OrderInterface[],
-  inputPrice?: number,
   foreignCalls: ForeignCallInterface[] = [],
   logs: PriceLogInterface[] = []
 ): {
@@ -20,42 +28,94 @@ export default function matchOrder(
   foreignCalls: ForeignCallInterface[];
   logs?: PriceLogInterface[];
 } {
-  let fillAmount: number;
-  // if there are no orders, push it
-  if (
-    orderbook.filter(
-      (order) => inputToken !== order.token && order.id !== inputTransaction
-    ).length === 0
-  ) {
-    // The input price should be defined here, because this is a first order for this pair
-    // TODO: @t8 check this
+  const orderType = input.price ? "limit" : "market";
+
+  // orders that are made in the reverse direction as the current one.
+  // this order can match with the reverse orders only
+  const reverseOrders = orderbook.filter(
+    (order) => input.token !== order.token && order.id !== input.transaction
+  );
+
+  // if there are no orders against the token we are buying, we only push it
+  // but first, we check if it is a limit order
+  if (!reverseOrders.length) {
+    // ensure that the first order is a limit order
     ContractAssert(
-      !!inputPrice,
-      "Input price should be defined for the first order to a pair"
+      orderType === "limit",
+      'The first order for a pair can only be a "limit" order'
     );
 
-    if (isInOrderBook(inputTransaction, orderbook)) {
-      return {
-        orderbook,
-        foreignCalls
-      };
-    }
+    // push to the orderbook
+    orderbook.push({
+      id: input.transaction,
+      transfer: input.transfer,
+      creator: input.creator,
+      token: input.token,
+      price: input.price,
+      quantity: input.quantity,
+      originalQuantity: input.quantity
+    });
 
     return {
-      orderbook: [
-        ...orderbook,
-        {
-          id: inputTransaction,
-          transfer: inputTransfer,
-          creator: inputCreator,
-          token: inputToken,
-          price: inputPrice,
-          quantity: inputQuantity,
-          originalQuantity: inputQuantity
-        }
-      ],
+      orderbook,
       foreignCalls
     };
+  }
+
+  // the total amount of tokens we will receive
+  // if the order type is "market", this changes
+  // for each order in the orderbook
+  // if it is a "limit" order, this will always
+  // be the same
+  let fillAmount: number;
+
+  // loop through orders against this order
+  for (let i = 0; i < orderbook.length; i++) {
+    const currentOrder = orderbook[i];
+
+    // only loop orders that are against this order
+    if (
+      input.token === currentOrder.token ||
+      currentOrder.id === input.transaction
+    )
+      continue;
+
+    // price of the current order reversed to the input token
+    const reversePrice = 1 / currentOrder.price;
+
+    // continue if the current order's price matches
+    // the input order's price (if the order is a limit order)
+    if (orderType === "limit" && input.price !== reversePrice) continue;
+
+    // set the total amount of tokens we would receive
+    // from this order
+    fillAmount =
+      orderType === "limit"
+        ? input.quantity * input.price
+        : input.quantity * reversePrice;
+
+    // TODO: completelly fill both orders
+
+    // TODO: comletelly fill only input order
+
+    // TODO: comletelly fill only the order from the orderbook
+
+    // the input order is going to be completely filled
+    if (fillAmount < currentOrder.quantity) {
+      // reduce the current order in the loop
+      currentOrder.quantity -= fillAmount;
+
+      // send tokens to the current order's creator
+      foreignCalls.push({
+        txID: SmartWeave.transaction.id,
+        contract: currentOrder.token,
+        input: {
+          function: "transfer",
+          target: currentOrder.creator,
+          qty: fillAmount
+        }
+      });
+    }
   }
 
   for (let i = 0; i < orderbook.length; i++) {

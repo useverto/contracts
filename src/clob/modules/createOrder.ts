@@ -83,14 +83,16 @@ export const CreateOrder = async (
   );
 
   // Invoke the recursive matching function
-  const { orderbook, foreignCalls } = matchOrder(
-    contractID,
-    contractInput.qty,
-    caller,
-    SmartWeave.transaction.id,
-    tokenTx,
-    sortedOrderbook,
-    price
+  const { orderbook, foreignCalls, logs } = matchOrder(
+    {
+      token: contractID,
+      quantity: contractInput.qty,
+      creator: caller,
+      transaction: SmartWeave.transaction.id,
+      transfer: tokenTx,
+      price
+    },
+    sortedOrderbook
   );
 
   // Update orderbook accordingly
@@ -100,7 +102,7 @@ export const CreateOrder = async (
   state.pairs[pairIndex].priceLogs = {
     orderID: SmartWeave.transaction.id,
     token: fromToken,
-    logs: []
+    logs: logs ?? []
   };
 
   // Update foreignCalls accordingly for tokens to be sent
