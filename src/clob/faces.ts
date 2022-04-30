@@ -78,7 +78,7 @@ export interface OrderInterface {
   id: string; // ID if the order transaction
   transfer: string; // ID of the token transfer
   creator: string;
-  token: string;
+  token: string; // the token the order is selling
   price: number;
   quantity: number;
   originalQuantity: number; // The original amount of tokens ordered

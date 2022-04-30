@@ -81,13 +81,3 @@ export const ensureValidInteraction = async (
  * @returns Valid address or not
  */
 export const isAddress = (addr: string) => /[a-z0-9_-]{43}/i.test(addr);
-
-/**
- * Check if order is in the orderbook
- *
- * @param id ID of the order
- * @param orderbook Orderbook array
- * @returns Whether the order is in the orderbook
- */
-export const isInOrderBook = (id: string, orderbook: OrderInterface[]) =>
-  !!orderbook.find((order) => order.id === id);

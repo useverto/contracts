@@ -85,7 +85,10 @@ export const CreateOrder = async (
   // Invoke the recursive matching function
   const { orderbook, foreignCalls, logs } = matchOrder(
     {
-      token: contractID,
+      pair: {
+        from: contractID,
+        to: usedPair.find((val) => val !== contractID)[0]
+      },
       quantity: contractInput.qty,
       creator: caller,
       transaction: SmartWeave.transaction.id,
