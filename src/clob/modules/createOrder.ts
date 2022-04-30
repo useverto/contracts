@@ -218,11 +218,15 @@ export default function matchOrder(
 
     // the input order is going to be completely filled
     if (fillAmount <= currentOrder.quantity) {
+      // the input order creator receives this much
+      // of the tokens from the current order
+      const receiveFromCurrent = remainingQuantity * reversePrice;
+
       // reduce the current order in the loop
       currentOrder.quantity -= fillAmount;
 
       // fill the remaining tokens
-      receiveAmount += remainingQuantity * reversePrice;
+      receiveAmount += receiveFromCurrent;
 
       // send tokens to the current order's creator
       foreignCalls.push({
@@ -235,19 +239,31 @@ export default function matchOrder(
         }
       });
 
-      // no tokens left to be matched
+      // push the swap to the logs
+      logs.push({
+        id: currentOrder.id,
+        price: input.price || reversePrice,
+        qty: receiveFromCurrent
+      });
+
+      // no tokens left in the input order to be matched
       remainingQuantity = 0;
 
       break;
     } else {
       // the input order is going to be partially filled
+      // but the current order will be
+
+      // the input order creator receives this much
+      // of the tokens from the current order
+      const receiveFromCurrent = currentOrder.quantity;
 
       // add all the tokens from the current order to fill up
       // the input order
-      receiveAmount += currentOrder.quantity;
+      receiveAmount += receiveFromCurrent;
 
       // the amount the current order creator will receive
-      const sendAmount = currentOrder.quantity * currentOrder.price;
+      const sendAmount = receiveFromCurrent * currentOrder.price;
 
       // reduce the remaining tokens to be matched
       // by the amount the user is going to receive
@@ -264,6 +280,16 @@ export default function matchOrder(
           qty: sendAmount
         }
       });
+
+      // push the swap to the logs
+      logs.push({
+        id: currentOrder.id,
+        price: input.price || reversePrice,
+        qty: receiveFromCurrent
+      });
+
+      // no tokens left in the current order to be matched
+      currentOrder.quantity = 0;
     }
 
     // if the current order is completely filled,
