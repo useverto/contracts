@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "module": "commonjs"
-  },
-  "extends": "./tsconfig",
-  "include": ["src/**/*.ts", "./types.d.ts"],
-  "exclude": ["__tests__", "node_modules"]
-}

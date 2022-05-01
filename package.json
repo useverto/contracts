@@ -14,7 +14,6 @@
   ],
   "scripts": {
     "build": "node ./build.js",
-    "build-module": "tsc --project tsconfig.module.json",
     "fmt": "prettier --write .",
     "test": "node ./build.js && jest ./dist/tests",
     "fmt:check": "prettier --check ."
