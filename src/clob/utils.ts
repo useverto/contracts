@@ -20,11 +20,13 @@ export const ensureValidTransfer = async (
     // @ts-ignore
     tx.get("tags").forEach((tag) => {
       if (tag.get("name", { decode: true, string: true }) === "Input") {
-        const input = JSON.parse(
-          tag.get("value", { decode: true, string: true })
-        );
+        const input: {
+          function: string;
+          target: string;
+          qty: number;
+        } = JSON.parse(tag.get("value", { decode: true, string: true }));
 
-        // Check if the interaction is a transfer
+        // check if the interaction is a transfer
         ContractAssert(
           input.function === "transfer",
           "The interaction is not a transfer"
@@ -38,6 +40,9 @@ export const ensureValidTransfer = async (
               .value,
           "The target of this transfer is not this contract"
         );
+
+        // validate the transfer qty
+        ContractAssert(input.qty && input.qty > 0, "Invalid transfer quantity");
       }
     });
   } catch (err) {

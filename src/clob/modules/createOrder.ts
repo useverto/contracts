@@ -7,6 +7,7 @@ import {
   PriceLogInterface
 } from "../faces";
 import { ensureValidTransfer, isAddress } from "../utils";
+import Transaction from "arweave/node/lib/transaction";
 
 export const CreateOrder = async (
   state: StateInterface,
@@ -35,19 +36,23 @@ export const CreateOrder = async (
   ContractAssert(pairIndex !== undefined, "This pair does not exist yet");
 
   // id of the transferred token
-  let contractID = "",
-    // transfer interaction input
-    contractInput,
-    // transfer transaction object
-    transferTx;
+  let contractID = "";
+  // transfer interaction input
+  let contractInput: {
+    function: string;
+    [key: string]: any;
+  };
+  // transfer transaction object
+  let transferTx: Transaction;
 
-  // Grab the contract id of the token they are transferring in the supplied tx
+  // grab the contract id of the token they are transferring in the supplied tx
   try {
     transferTx = await SmartWeave.unsafeClient.transactions.get(tokenTx);
   } catch (err) {
     throw new ContractError(err);
   }
 
+  // @ts-expect-error
   transferTx.get("tags").forEach((tag) => {
     if (tag.get("name", { decode: true, string: true }) === "Contract") {
       contractID = tag.get("value", { decode: true, string: true });
