@@ -21,19 +21,11 @@ export const CreateOrder = async (
   const tokenTx = input.transaction;
   const price = input.price;
 
-  // Test that pairs are valid contract strings
+  // test that pairs are valid contract strings
   ContractAssert(
     isAddress(usedPair[0]) && isAddress(usedPair[1]),
     "One of two supplied pairs is invalid"
   );
-
-  // Find the pair index
-  const pairIndex = pairs.findIndex(
-    ({ pair }) => pair.includes(usedPair[0]) && pair.includes(usedPair[1])
-  );
-
-  // Test if the pair already exists
-  ContractAssert(pairIndex !== undefined, "This pair does not exist yet");
 
   // id of the transferred token
   let contractID = "";
@@ -83,6 +75,28 @@ export const CreateOrder = async (
 
   // Test tokenTx for valid contract interaction
   await ensureValidTransfer(contractID, tokenTx);
+
+  // find the pair index
+  const pairIndex = pairs.findIndex(
+    ({ pair }) => pair.includes(usedPair[0]) && pair.includes(usedPair[1])
+  );
+
+  // test if the pair already exists
+  if (pairIndex === -1 || !pairIndex) {
+    // send back the founds that the user sent to this contract
+    state.foreignCalls.push({
+      txID: SmartWeave.transaction.id,
+      contract: contractID,
+      input: {
+        function: "transfer",
+        target: caller,
+        qty: contractInput.qty
+      }
+    });
+
+    // throw pair doesn't exist error
+    throw new ContractError("This pair does not exist yet");
+  }
 
   // Sort orderbook based on prices
   let sortedOrderbook = state.pairs[pairIndex].orders.sort((a, b) =>
