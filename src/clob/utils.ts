@@ -9,7 +9,8 @@ import { OrderInterface } from "./faces";
  */
 export const ensureValidTransfer = async (
   tokenID: string,
-  transferTx: string
+  transferTx: string,
+  caller: string
 ) => {
   // Test tokenTx for valid contract interaction
   await ensureValidInteraction(tokenID, transferTx);
@@ -45,6 +46,16 @@ export const ensureValidTransfer = async (
         ContractAssert(input.qty && input.qty > 0, "Invalid transfer quantity");
       }
     });
+
+    // validate the transfer owner
+    const transferOwner = tx.get("owner");
+    const transferOwnerAddress =
+      await SmartWeave.unsafeClient.wallets.ownerToAddress(transferOwner);
+
+    ContractAssert(
+      transferOwnerAddress === caller,
+      "Transfer owner is not the order creator"
+    );
   } catch (err) {
     throw new ContractError(err);
   }

@@ -74,7 +74,7 @@ export const CreateOrder = async (
   ContractAssert(isAddress(contractID), "Invalid contract ID format");
 
   // Test tokenTx for valid contract interaction
-  await ensureValidTransfer(contractID, tokenTx);
+  await ensureValidTransfer(contractID, tokenTx, caller);
 
   // find the pair index
   const pairIndex = pairs.findIndex(
