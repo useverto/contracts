@@ -64,6 +64,10 @@ export const CreateOrder = async (
     contractID !== "",
     "No contract ID found in the transfer transaction"
   );
+  ContractAssert(
+    state.usedTransfers.includes(tokenTx),
+    "This transfer has already been used for an order"
+  );
 
   const fromToken = usedPair[0];
 
@@ -133,6 +137,8 @@ export const CreateOrder = async (
   for (let i = 0; i < foreignCalls.length; i++) {
     state.foreignCalls.push(foreignCalls[i]);
   }
+
+  state.usedTransfers.push(tokenTx);
 
   return state;
 };

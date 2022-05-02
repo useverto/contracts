@@ -13,6 +13,7 @@ export interface StateInterface {
     };
     orders: OrderInterface[];
   }[];
+  usedTransfers: string[]; // list of transfers that have already been used by an order
   invocations: string[];
   foreignCalls: ForeignCallInterface[];
 }
