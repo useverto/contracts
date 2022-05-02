@@ -103,7 +103,7 @@ export const CreateOrder = async (
   }
 
   // Sort orderbook based on prices
-  let sortedOrderbook = state.pairs[pairIndex].orders.sort((a, b) =>
+  const sortedOrderbook = state.pairs[pairIndex].orders.sort((a, b) =>
     a.price > b.price ? 1 : -1
   );
 
