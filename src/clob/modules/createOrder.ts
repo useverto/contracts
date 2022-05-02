@@ -12,7 +12,13 @@ import Transaction from "arweave/node/lib/transaction";
 export const CreateOrder = async (
   state: StateInterface,
   action: ActionInterface
-): Promise<StateInterface> => {
+): Promise<{
+  state: StateInterface;
+  result: {
+    status: "success" | "failure";
+    message: string;
+  };
+}> => {
   const caller = action.caller;
   const input: CreateOrderInterface = action.input;
 
@@ -58,7 +64,7 @@ export const CreateOrder = async (
 
   ContractAssert(
     typeof contractID === "string",
-    "Invalid contract ID: not a string"
+    "Invalid contract ID in transfer: not a string"
   );
   ContractAssert(
     contractID !== "",
@@ -68,26 +74,15 @@ export const CreateOrder = async (
     state.usedTransfers.includes(tokenTx),
     "This transfer has already been used for an order"
   );
-
-  const fromToken = usedPair[0];
-
-  ContractAssert(
-    fromToken === contractID,
-    "Invalid transfer transaction, using the wrong token. The transferred token has to be the first item in the pair"
-  );
   ContractAssert(isAddress(contractID), "Invalid contract ID format");
 
   // Test tokenTx for valid contract interaction
   await ensureValidTransfer(contractID, tokenTx, caller);
 
-  // find the pair index
-  const pairIndex = pairs.findIndex(
-    ({ pair }) => pair.includes(usedPair[0]) && pair.includes(usedPair[1])
-  );
-
-  // test if the pair already exists
-  if (pairIndex === -1 || !pairIndex) {
-    // send back the founds that the user sent to this contract
+  /**
+   * Refund the order, if it is invalid
+   */
+  const refundTransfer = () =>
     state.foreignCalls.push({
       txID: SmartWeave.transaction.id,
       contract: contractID,
@@ -98,8 +93,48 @@ export const CreateOrder = async (
       }
     });
 
-    // throw pair doesn't exist error
-    throw new ContractError("This pair does not exist yet");
+  // check if the right token is used
+  // the first token in the pair has to
+  // be the token the user is selling,
+  // the second token in the pair has to
+  // be the token the user is buying
+  const fromToken = usedPair[0];
+
+  if (fromToken !== contractID) {
+    // send back the funds that the user sent to this contract
+    refundTransfer();
+
+    // return state with the refund foreign call
+    // and the error message
+    return {
+      state,
+      result: {
+        status: "failure",
+        message:
+          "Invalid transfer transaction, using the wrong token. The transferred token has to be the first item in the pair"
+      }
+    };
+  }
+
+  // find the pair index
+  const pairIndex = pairs.findIndex(
+    ({ pair }) => pair.includes(usedPair[0]) && pair.includes(usedPair[1])
+  );
+
+  // test if the pair already exists
+  if (pairIndex === -1 || !pairIndex) {
+    // send back the funds
+    refundTransfer();
+
+    // return state with the refund foreign call
+    // and the error message
+    return {
+      state,
+      result: {
+        status: "failure",
+        message: "This pair does not exist yet"
+      }
+    };
   }
 
   // Sort orderbook based on prices
@@ -107,40 +142,61 @@ export const CreateOrder = async (
     a.price > b.price ? 1 : -1
   );
 
-  // Invoke the recursive matching function
-  const { orderbook, foreignCalls, logs } = matchOrder(
-    {
-      pair: {
-        from: contractID,
-        to: usedPair.find((val) => val !== contractID)[0]
+  try {
+    // try invoking the match function
+    const { orderbook, foreignCalls, logs } = matchOrder(
+      {
+        pair: {
+          from: contractID,
+          to: usedPair.find((val) => val !== contractID)[0]
+        },
+        quantity: contractInput.qty,
+        creator: caller,
+        transaction: SmartWeave.transaction.id,
+        transfer: tokenTx,
+        price
       },
-      quantity: contractInput.qty,
-      creator: caller,
-      transaction: SmartWeave.transaction.id,
-      transfer: tokenTx,
-      price
-    },
-    sortedOrderbook
-  );
+      sortedOrderbook
+    );
 
-  // Update orderbook accordingly
-  state.pairs[pairIndex].orders = orderbook;
+    // Update orderbook accordingly
+    state.pairs[pairIndex].orders = orderbook;
 
-  // add this orders price log as the last order price log to the pair object
-  state.pairs[pairIndex].priceLogs = {
-    orderID: SmartWeave.transaction.id,
-    token: fromToken,
-    logs: logs ?? []
-  };
+    // add this orders price log as the last order price log to the pair object
+    state.pairs[pairIndex].priceLogs = {
+      orderID: SmartWeave.transaction.id,
+      token: fromToken,
+      logs: logs ?? []
+    };
 
-  // Update foreignCalls accordingly for tokens to be sent
-  for (let i = 0; i < foreignCalls.length; i++) {
-    state.foreignCalls.push(foreignCalls[i]);
+    // Update foreignCalls accordingly for tokens to be sent
+    for (let i = 0; i < foreignCalls.length; i++) {
+      state.foreignCalls.push(foreignCalls[i]);
+    }
+
+    state.usedTransfers.push(tokenTx);
+
+    return {
+      state,
+      result: {
+        status: "success",
+        message: "Order created successfully"
+      }
+    };
+  } catch (e) {
+    // if the match function throws an error, refund the transfer
+    refundTransfer();
+
+    // return state with the refund foreign call
+    // and the error message
+    return {
+      state,
+      result: {
+        status: "failure",
+        message: e.message
+      }
+    };
   }
-
-  state.usedTransfers.push(tokenTx);
-
-  return state;
 };
 
 export default function matchOrder(
@@ -183,10 +239,8 @@ export default function matchOrder(
   // but first, we check if it is a limit order
   if (!reverseOrders.length) {
     // ensure that the first order is a limit order
-    ContractAssert(
-      orderType === "limit",
-      'The first order for a pair can only be a "limit" order'
-    );
+    if (orderType !== "limit")
+      throw new Error('The first order for a pair can only be a "limit" order');
 
     // push to the orderbook
     orderbook.push({

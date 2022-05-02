@@ -21,7 +21,7 @@ export async function handle(state: StateInterface, action: ActionInterface) {
       return { state: await AddPair(state, action) };
 
     case "createOrder":
-      return { state: await CreateOrder(state, action) };
+      return await CreateOrder(state, action);
 
     case "cancelOrder":
       return { state: await CancelOrder(state, action) };
