@@ -66,14 +66,19 @@ export interface ReadOutboxInterface {
   id: string;
 }
 
-export interface ForeignTransferInterface {
+export interface ForeignTransferInterface
+  extends Partial<ForeignTransferProps> {
   function: "foreignTransfer";
+  transfers?: ForeignTransferProps[];
+}
+
+// Other interfaces
+
+interface ForeignTransferProps {
   tokenID: string;
   target: string;
   qty: number;
 }
-
-// Other interfaces
 
 export interface OrderInterface {
   id: string; // ID if the order transaction

@@ -17,22 +17,48 @@ export const ForeignTransfer = (
     "Caller cannot issue a foreign transfer"
   );
 
-  // Check params
-  ContractAssert(
-    input.qty && !!input.target && !!input.tokenID,
-    "Missing parameters"
-  );
+  // multiple transfers mode
+  if (input.transfers) {
+    for (let i = 0; i < input.transfers.length; i++) {
+      const transfer = input.transfers[i];
 
-  // Issue the transfer
-  state.foreignCalls.push({
-    txID: SmartWeave.transaction.id,
-    contract: input.tokenID,
-    input: {
-      function: "transfer",
-      target: input.target,
-      qty: input.qty
+      // Check params
+      ContractAssert(
+        transfer.qty && !!transfer.target && !!transfer.tokenID,
+        `Missing parameters for transfer #${i}`
+      );
+
+      // Issue the transfers
+      state.foreignCalls.push({
+        txID: SmartWeave.transaction.id,
+        contract: transfer.tokenID,
+        input: {
+          function: "transfer",
+          target: transfer.target,
+          qty: transfer.qty
+        }
+      });
     }
-  });
+  } else {
+    // single transfer mode
+
+    // Check params
+    ContractAssert(
+      input.qty && !!input.target && !!input.tokenID,
+      "Missing parameters"
+    );
+
+    // Issue the transfer
+    state.foreignCalls.push({
+      txID: SmartWeave.transaction.id,
+      contract: input.tokenID,
+      input: {
+        function: "transfer",
+        target: input.target,
+        qty: input.qty
+      }
+    });
+  }
 
   return state;
 };
