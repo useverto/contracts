@@ -148,7 +148,7 @@ export const CreateOrder = async (
       {
         pair: {
           from: contractID,
-          to: usedPair.find((val) => val !== contractID)[0]
+          to: usedPair.find((val) => val !== contractID)
         },
         quantity: contractInput.qty,
         creator: caller,
