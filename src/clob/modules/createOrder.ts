@@ -122,7 +122,7 @@ export const CreateOrder = async (
   );
 
   // test if the pair already exists
-  if (pairIndex === -1 || !pairIndex) {
+  if (pairIndex === -1) {
     // send back the funds
     refundTransfer();
 
