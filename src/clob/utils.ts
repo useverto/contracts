@@ -1,4 +1,4 @@
-import { OrderInterface } from "./faces";
+import { OrderInterface, TagsArray } from "./faces";
 
 /**
  * Ensures that the interaction tx is a valid transfer transaction
@@ -36,9 +36,9 @@ export const ensureValidTransfer = async (
         // make sure that the target of the transfer transaction is THIS (the clob) contract
         ContractAssert(
           input.target ===
-            // @ts-expect-error
-            SmartWeave.transaction.tags.find(({ name }) => name === "Contract")
-              .value,
+            tagPatch(SmartWeave.transaction.tags).find(
+              ({ name }) => name === "Contract"
+            ).value,
           "The target of this transfer is not this contract"
         );
 
@@ -97,3 +97,25 @@ export const ensureValidInteraction = async (
  * @returns Valid address or not
  */
 export const isAddress = (addr: string) => /[a-z0-9_-]{43}/i.test(addr);
+
+/**
+ * Fixes a tag array / record. This is necessary because of SmartWeave bugs.
+ *
+ * @param tags Tags to fix
+ * @returns Tags array
+ */
+function tagPatch(
+  tags: Record<string, string | string[]> | TagsArray
+): TagsArray {
+  if (Array.isArray(tags)) return tags;
+  const constructedArray: TagsArray = [];
+
+  for (const field in tags) {
+    constructedArray.push({
+      name: field,
+      value: tags[field]
+    });
+  }
+
+  return constructedArray;
+}

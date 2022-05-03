@@ -105,3 +105,8 @@ export interface PriceLogInterface {
   price: number; // the price the token was bought at
   qty: number; // qty that the user got in return for their order
 }
+
+export type TagsArray = {
+  name: string;
+  value: string | string[];
+}[];
