@@ -31,7 +31,6 @@ export interface AddPairInterface {
 export interface CreateOrderInterface {
   function: "createOrder";
   transaction: string; // Transaction hash from the token transfer to this contract
-  token: string; // ID of the token that the user is trading (needed for volume calculation)
   pair: [string, string]; // Pair that user is trading between
   price?: number; // Price of token being sent (optional)
 }
