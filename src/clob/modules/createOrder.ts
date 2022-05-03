@@ -229,11 +229,18 @@ export default function matchOrder(
   const foreignCalls: ForeignCallInterface[] = [];
   const logs: PriceLogInterface[] = [];
 
-  // orders that are made in the reverse direction as the current one.
+  // orders that are made in the *reverse* direction as the current one
   // this order can match with the reverse orders only
   const reverseOrders = orderbook.filter(
     (order) => input.pair.from !== order.token && order.id !== input.transaction
   );
+
+  // prices of the orders that are made in the
+  // *same* direction as the current one
+  const allPrices = orderbook
+    .filter((order) => !reverseOrders.find(({ id }) => order.id === id))
+    .map(({ price }) => price);
+  const averagePrice = allPrices.reduce((a, b) => a + b, 0) / allPrices.length;
 
   // if there are no orders against the token we are buying, we only push it
   // but first, we check if it is a limit order
@@ -386,7 +393,11 @@ export default function matchOrder(
       transfer: input.transfer,
       creator: input.creator,
       token: input.pair.from,
-      price: input.price,
+      // if the order type is "market", we push the order
+      // with an average price of all the previous orders
+
+      // TODO: @t8 check this
+      price: input.price ?? averagePrice,
       quantity: remainingQuantity,
       originalQuantity: input.quantity
     });
