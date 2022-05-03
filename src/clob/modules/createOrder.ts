@@ -327,8 +327,6 @@ export default function matchOrder(
 
       // no tokens left in the input order to be matched
       remainingQuantity = 0;
-
-      break;
     } else {
       // the input order is going to be partially filled
       // but the current order will be
@@ -376,6 +374,10 @@ export default function matchOrder(
     if (currentOrder.quantity === 0) {
       orderbook = orderbook.filter((val) => val.id !== currentOrder.id);
     }
+
+    // if there are no more tokens to be matched,
+    // we can break the loop
+    if (remainingQuantity === 0) break;
   }
 
   if (remainingQuantity > 0) {
