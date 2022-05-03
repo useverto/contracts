@@ -71,7 +71,7 @@ export const CreateOrder = async (
     "No contract ID found in the transfer transaction"
   );
   ContractAssert(
-    state.usedTransfers.includes(tokenTx),
+    !state.usedTransfers.includes(tokenTx),
     "This transfer has already been used for an order"
   );
   ContractAssert(isAddress(contractID), "Invalid contract ID format");
