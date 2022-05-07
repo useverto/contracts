@@ -49,12 +49,6 @@ export interface SetCommunityContractInterface {
   id: string;
 }
 
-export interface InvokeInterface {
-  function: "invoke";
-  foreignContract: string;
-  invocation: InvocationInterface;
-}
-
 export interface ReadOutboxInterface {
   function: "readOutbox";
   contract: string;

@@ -7,7 +7,6 @@ import { CreateOrder } from "./modules/createOrder";
 import { CancelOrder } from "./modules/cancelOrder";
 import { ReadOutbox } from "./modules/readOutbox";
 import { AddPair } from "./modules/addPair";
-import { Invoke } from "./modules/invoke";
 import { Halt } from "./modules/halt";
 
 export async function handle(state: StateInterface, action: ActionInterface) {
@@ -28,9 +27,6 @@ export async function handle(state: StateInterface, action: ActionInterface) {
 
     case "readOutbox":
       return { state: await ReadOutbox(state, action) };
-
-    case "invoke":
-      return { state: await Invoke(state, action) };
 
     case "togglePairGatekeeper":
       return { state: TogglePairGatekeeper(state, action) };
