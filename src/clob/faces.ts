@@ -6,11 +6,7 @@ export interface StateInterface {
   communityContract: string; // ID of the Verto community contract
   pairs: {
     pair: [string, string];
-    priceLogs?: {
-      orderID: string; // id of the last order made
-      token: string; // id of the token that was sent in the last order made
-      logs: PriceLogInterface[];
-    };
+    priceData: PriceDataInterface;
     orders: OrderInterface[];
   }[];
   usedTransfers: string[]; // list of transfers that have already been used by an order
@@ -100,11 +96,29 @@ export interface InvocationInterface {
   [key: string | number]: any;
 }
 
-export interface PriceLogInterface {
-  id: string; // order ID that matched with the last order
-  price: number; // the price the token was bought at
-  qty: number; // qty that the user got in return for their order
+interface PriceDataInterface {
+  // the id of the token from the pair
+  // the price is calculated for
+  // "x something / 1 dominantToken"
+  dominantToken: string;
+  // the block the order was created in
+  block: number;
+  // volume weighted average price, in
+  // "x something / 1 dominantToken"
+  vwap: number;
+  // logs for this order's matches
+  matchLogs: MatchLogs;
 }
+
+export type MatchLogs = {
+  // the id the order matches with
+  id: string;
+  // the matched quantity
+  qty: number;
+  // the price the order matched at
+  // in "x something / 1 dominantToken"
+  price: number;
+}[];
 
 export type TagsArray = {
   name: string;

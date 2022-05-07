@@ -4,7 +4,7 @@ import {
   CreateOrderInterface,
   OrderInterface,
   ForeignCallInterface,
-  PriceLogInterface
+  MatchLogs
 } from "../faces";
 import { ensureValidTransfer, isAddress } from "../utils";
 import Transaction from "arweave/node/lib/transaction";
@@ -144,7 +144,7 @@ export const CreateOrder = async (
 
   try {
     // try invoking the match function
-    const { orderbook, foreignCalls, logs } = matchOrder(
+    const { orderbook, foreignCalls, matches } = matchOrder(
       {
         pair: {
           from: contractID,
@@ -162,12 +162,30 @@ export const CreateOrder = async (
     // Update orderbook accordingly
     state.pairs[pairIndex].orders = orderbook;
 
-    // add this orders price log as the last order price log to the pair object
-    state.pairs[pairIndex].priceLogs = {
-      orderID: SmartWeave.transaction.id,
-      token: fromToken,
-      logs: logs ?? []
-    };
+    // calculate latest price and push logs
+    // if the order had matches
+    if (matches.length > 0) {
+      const dominantToken = state.pairs[pairIndex].pair[0];
+
+      // volume weighted average price
+      // how it is calculated:
+      // (volume_1 * price_1) + (volume_2 * price_2) + ...
+      // divided by
+      // volume_1 + volume_2 + ...
+      const vwap =
+        matches
+          .map(({ qty: volume, price }) => volume * price)
+          .reduce((a, b) => a + b, 0) /
+        matches.map(({ qty: volume }) => volume).reduce((a, b) => a + b, 0);
+
+      // update the latest price data
+      state.pairs[pairIndex].priceData = {
+        dominantToken,
+        block: SmartWeave.block.height,
+        vwap,
+        matchLogs: matches
+      };
+    }
 
     // Update foreignCalls accordingly for tokens to be sent
     for (let i = 0; i < foreignCalls.length; i++) {
@@ -223,11 +241,11 @@ export default function matchOrder(
 ): {
   orderbook: OrderInterface[];
   foreignCalls: ForeignCallInterface[];
-  logs?: PriceLogInterface[];
+  matches: MatchLogs;
 } {
   const orderType = input.price ? "limit" : "market";
   const foreignCalls: ForeignCallInterface[] = [];
-  const logs: PriceLogInterface[] = [];
+  const matches: MatchLogs = [];
 
   // orders that are made in the *reverse* direction as the current one
   // this order can match with the reverse orders only
@@ -255,7 +273,8 @@ export default function matchOrder(
 
     return {
       orderbook,
-      foreignCalls
+      foreignCalls,
+      matches
     };
   }
 
@@ -422,6 +441,6 @@ export default function matchOrder(
   return {
     orderbook,
     foreignCalls,
-    logs
+    matches
   };
 }
