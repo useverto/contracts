@@ -142,11 +142,16 @@ export const CreateOrder = async (
     a.price > b.price ? 1 : -1
   );
 
+  // get the dominant token from the pair
+  // it should always be the first one
+  const dominantToken = state.pairs[pairIndex].pair[0];
+
   try {
     // try invoking the match function
     const { orderbook, foreignCalls, matches } = matchOrder(
       {
         pair: {
+          dominant: dominantToken,
           from: contractID,
           to: usedPair.find((val) => val !== contractID)
         },
@@ -165,8 +170,6 @@ export const CreateOrder = async (
     // calculate latest price and push logs
     // if the order had matches
     if (matches.length > 0) {
-      const dominantToken = state.pairs[pairIndex].pair[0];
-
       // volume weighted average price
       // how it is calculated:
       // (volume_1 * price_1) + (volume_2 * price_2) + ...
@@ -221,6 +224,8 @@ export default function matchOrder(
   input: {
     /** Token of the new order */
     pair: {
+      /** The dominant token to calculate the price for */
+      dominant: string;
       /** ID of the token the user is trading from */
       from: string;
       /** ID of the token the user is trading for */
@@ -314,11 +319,14 @@ export default function matchOrder(
     // from this order
     fillAmount = remainingQuantity * (input.price ?? reversePrice);
 
+    // the input order creator receives this much
+    // of the tokens from the current order
+    let receiveFromCurrent = 0;
+
     // the input order is going to be completely filled
     if (fillAmount <= currentOrder.quantity) {
-      // the input order creator receives this much
-      // of the tokens from the current order
-      const receiveFromCurrent = remainingQuantity * reversePrice;
+      // calculate receive amount
+      receiveFromCurrent = remainingQuantity * reversePrice;
 
       // reduce the current order in the loop
       currentOrder.quantity -= fillAmount;
@@ -337,22 +345,14 @@ export default function matchOrder(
         }
       });
 
-      // push the swap to the logs
-      logs.push({
-        id: currentOrder.id,
-        price: input.price || reversePrice,
-        qty: receiveFromCurrent
-      });
-
       // no tokens left in the input order to be matched
       remainingQuantity = 0;
     } else {
       // the input order is going to be partially filled
       // but the current order will be
 
-      // the input order creator receives this much
-      // of the tokens from the current order
-      const receiveFromCurrent = currentOrder.quantity;
+      // calculate receive amount
+      receiveFromCurrent = currentOrder.quantity;
 
       // add all the tokens from the current order to fill up
       // the input order
@@ -377,16 +377,25 @@ export default function matchOrder(
         }
       });
 
-      // push the swap to the logs
-      logs.push({
-        id: currentOrder.id,
-        price: input.price || reversePrice,
-        qty: receiveFromCurrent
-      });
-
       // no tokens left in the current order to be matched
       currentOrder.quantity = 0;
     }
+
+    // calculate dominant token price
+    let dominantPrice = 0;
+
+    if (input.pair.dominant === input.pair.from) {
+      dominantPrice = input.price ?? reversePrice;
+    } else {
+      dominantPrice = currentOrder.price;
+    }
+
+    // push the match
+    matches.push({
+      id: currentOrder.id,
+      qty: receiveFromCurrent,
+      price: dominantPrice
+    });
 
     // if the current order is completely filled,
     // remove it from the orderbook
