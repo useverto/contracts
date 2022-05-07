@@ -33,6 +33,12 @@ export const CreateOrder = async (
     "One of two supplied pairs is invalid"
   );
 
+  // validate price for limit orders
+  ContractAssert(
+    price === undefined || price === null || price > 0,
+    "Price must be greater than 0"
+  );
+
   // id of the transferred token
   let contractID = "";
   // transfer interaction input
