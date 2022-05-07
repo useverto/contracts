@@ -1,6 +1,7 @@
 export interface StateInterface {
   emergencyHaltWallet: string; // Wallet address to be used to halt contract in the event of an emergency
   halted: boolean;
+  // TODO: fees
   protocolFeePercent: number; // Percent of orders going to protocol
   pairGatekeeper: boolean; // Disable access to "addPair" to addresses without a Verto ID
   communityContract: string; // ID of the Verto community contract

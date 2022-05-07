@@ -153,6 +153,7 @@ export const CreateOrder = async (
   const dominantToken = state.pairs[pairIndex].pair[0];
 
   try {
+    // TODO: fees (state.protocolFeePercent)
     // try invoking the match function
     const { orderbook, foreignCalls, matches } = matchOrder(
       {
