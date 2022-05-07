@@ -108,7 +108,6 @@ export const AddPair = async (
 
   state.pairs.push({
     pair: newPair,
-    priceLogs: null,
     orders: []
   });
 

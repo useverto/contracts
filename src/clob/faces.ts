@@ -6,7 +6,7 @@ export interface StateInterface {
   communityContract: string; // ID of the Verto community contract
   pairs: {
     pair: [string, string];
-    priceData: PriceDataInterface;
+    priceData?: PriceDataInterface;
     orders: OrderInterface[];
   }[];
   usedTransfers: string[]; // list of transfers that have already been used by an order
