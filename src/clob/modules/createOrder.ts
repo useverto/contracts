@@ -342,15 +342,17 @@ export default function matchOrder(
       receiveAmount += receiveFromCurrent;
 
       // send tokens to the current order's creator
-      foreignCalls.push({
-        txID: SmartWeave.transaction.id,
-        contract: input.pair.from,
-        input: {
-          function: "transfer",
-          target: currentOrder.creator,
-          qty: remainingQuantity
-        }
-      });
+      if (remainingQuantity > 0) {
+        foreignCalls.push({
+          txID: SmartWeave.transaction.id,
+          contract: input.pair.from,
+          input: {
+            function: "transfer",
+            target: currentOrder.creator,
+            qty: remainingQuantity
+          }
+        });
+      }
 
       // no tokens left in the input order to be matched
       remainingQuantity = 0;
