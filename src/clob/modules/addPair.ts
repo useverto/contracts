@@ -1,5 +1,6 @@
 import { ActionInterface, StateInterface, AddPairInterface } from "../faces";
 import { StateInterface as CommunityContractStateInterface } from "../../community/faces";
+import { getContractID } from "../utils";
 
 export const AddPair = async (
   state: StateInterface,
@@ -15,6 +16,11 @@ export const AddPair = async (
 
   // Check if the pair length is valid
   ContractAssert(newPair.length === 2, "Invalid pair length. Should be 2");
+
+  ContractAssert(
+    newPair[0] !== getContractID() && newPair[1] !== getContractID(),
+    "Cannot add self as a pair"
+  );
 
   // Test that pairs are valid contract strings
   ContractAssert(

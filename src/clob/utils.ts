@@ -35,10 +35,7 @@ export const ensureValidTransfer = async (
 
         // make sure that the target of the transfer transaction is THIS (the clob) contract
         ContractAssert(
-          input.target ===
-            tagPatch(SmartWeave.transaction.tags).find(
-              ({ name }) => name === "Contract"
-            ).value,
+          input.target === getContractID(),
           "The target of this transfer is not this contract"
         );
 
@@ -118,4 +115,16 @@ function tagPatch(
   }
 
   return constructedArray;
+}
+
+/**
+ * Get the transaction id of this contract.
+ *
+ * @returns The CLOB contract ID
+ */
+export function getContractID() {
+  const tags = tagPatch(SmartWeave.transaction.tags);
+  const id = tags.find(({ name }) => name === "Contract").value;
+
+  return id as string;
 }

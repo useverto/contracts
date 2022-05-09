@@ -5,6 +5,7 @@ import {
   ForeignCallInterface
 } from "../faces";
 import { handle } from "../index";
+import { getContractID } from "../utils";
 
 export const ReadOutbox = async (
   state: StateInterface,
@@ -14,6 +15,9 @@ export const ReadOutbox = async (
 
   // Ensure that a contract ID is passed
   ContractAssert(!!input.contract, "Missing contract to invoke");
+
+  // Ensure that we are not reading our own outbox
+  ContractAssert(input.contract !== getContractID(), "Cannot read own outbox");
 
   // Read the state of the foreign contract
   const foreignState = await SmartWeave.contracts.readContractState(

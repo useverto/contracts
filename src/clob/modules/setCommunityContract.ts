@@ -3,7 +3,7 @@ import {
   SetCommunityContractInterface,
   StateInterface
 } from "../faces";
-import { isAddress } from "../utils";
+import { getContractID, isAddress } from "../utils";
 
 export const SetCommunityContract = (
   state: StateInterface,
@@ -16,6 +16,12 @@ export const SetCommunityContract = (
   ContractAssert(
     caller === state.emergencyHaltWallet,
     "Caller cannot set the community contract"
+  );
+
+  // Ensure that the contract is not this one
+  ContractAssert(
+    id !== getContractID(),
+    "Cannot add self as community contract"
   );
 
   // Check if the supplied ID is valid
