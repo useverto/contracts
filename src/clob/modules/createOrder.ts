@@ -195,6 +195,9 @@ export const CreateOrder = async (
         vwap,
         matchLogs: matches
       };
+    } else {
+      // if no matches, set the latest price data to empty
+      state.pairs[pairIndex].priceData = undefined;
     }
 
     // Update foreignCalls accordingly for tokens to be sent
