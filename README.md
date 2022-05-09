@@ -1,8 +1,25 @@
 # contracts
 
-FCP examples
+The Verto Protocol's smart contracts for the SmartWeave protocol.
 
-RQH3jrx9PpfLwvk4uKG_IFFVx21FoZnuRfDaJoDJ_mc
+## CLOB contract
 
-with initial invoke call:
-RTxCiarZYSo7F_KnaPaypUyVhZLXSSGRpCcM37lbIhg
+The CLOB contract is a smart contract that functions as a decentralized Central Limit Order Book.
+
+[Link](src/clob/)
+
+### Default state
+
+```ts
+{
+  emergencyHaltWallet: "",
+  halted: false,
+  protocolFeePercent: 0.05,
+  pairGatekeeper: false,
+  communityContract: "",
+  pairs: [],
+  usedTransfers: [],
+  invocations: [],
+  foreignCalls: []
+}
+```
