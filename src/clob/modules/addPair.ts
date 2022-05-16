@@ -104,13 +104,13 @@ export const AddPair = async (
   }
 
   // Test if pair already exists
-  for (let i = 0; i < pairs.length; i++) {
-    const currentPair = pairs[i].pair;
-    ContractAssert(
-      !currentPair.includes(newPair[0]) && !currentPair.includes(newPair[1]),
-      "This pair already exists"
-    );
-  }
+  ContractAssert(
+    !pairs.find(
+      ({ pair: existingPair }) =>
+        existingPair.includes(newPair[0]) && existingPair.includes(newPair[1])
+    ),
+    "This pair already exists"
+  );
 
   state.pairs.push({
     pair: newPair,
